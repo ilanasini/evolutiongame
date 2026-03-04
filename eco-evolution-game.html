@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EcoEvolution 🌿 - משחק אקולוגיה</title>
+<style>
+:root {
+  --bg:#071a0f; --card:#0f2d1c; --card2:#1a4030;
+  --g1:#2d6a4f; --g2:#40916c; --g3:#52b788; --g4:#74c69d;
+  --text:#d8f3dc; --text2:#95d5b2;
+  --gold:#ffd166; --sky:#118ab2;
+  --danger:#e63946; --success:#06d6a0; --warn:#f4a261;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Tahoma,Arial,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;direction:rtl;overflow-x:hidden;}
+
+/* particles */
+#particles{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:hidden;}
+.ptcl{position:absolute;opacity:.2;animation:pfloat linear infinite;}
+@keyframes pfloat{from{transform:translateY(110vh) rotate(0deg);opacity:.2;}to{transform:translateY(-60px) rotate(360deg);opacity:0;}}
+
+/* screens */
+#app{position:relative;z-index:1;min-height:100vh;}
+.screen{display:none;min-height:100vh;padding:20px;flex-direction:column;align-items:center;}
+.screen.active{display:flex;}
+
+/* buttons */
+.btn{background:linear-gradient(135deg,#40916c,#2d6a4f);color:#d8f3dc;border:none;padding:13px 36px;border-radius:50px;font-size:1.1rem;font-weight:700;cursor:pointer;transition:all .25s;box-shadow:0 4px 18px rgba(64,145,108,.35);font-family:inherit;}
+.btn:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(64,145,108,.55);}
+.btn:active{transform:translateY(0);}
+.btn-outline{background:transparent;border:2px solid var(--g4);color:var(--g4);}
+.btn-danger{background:linear-gradient(135deg,#e63946,#9b1d1d);}
+
+/* title */
+#title-screen{justify-content:center;text-align:center;background:radial-gradient(ellipse at center,#1b4332 0%,#071a0f 70%);}
+.title-main{font-size:3.2rem;font-weight:900;background:linear-gradient(135deg,#74c69d,#d8f3dc,#52b788);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:glow 2s ease-in-out infinite alternate;}
+@keyframes glow{from{filter:drop-shadow(0 0 15px #74c69d);}to{filter:drop-shadow(0 0 35px #52b788);}}
+.title-sub{font-size:1.15rem;color:var(--g4);margin:10px 0 25px;opacity:.9;}
+.title-desc{max-width:420px;line-height:1.85;opacity:.8;margin-bottom:35px;}
+
+/* map */
+#map-screen{background:radial-gradient(ellipse at top,#1b3a2d 0%,#071a0f 70%);}
+.map-hdr{text-align:center;margin-bottom:28px;width:100%;}
+.map-hdr h2{font-size:1.9rem;color:var(--g4);}
+.score-bar{display:inline-flex;align-items:center;gap:10px;background:var(--card);padding:9px 22px;border-radius:50px;border:1px solid var(--g3);font-size:1.05rem;margin-top:10px;}
+.zones{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:16px;max-width:960px;width:100%;padding:10px;}
+.zone{background:var(--card);border:2px solid var(--g1);border-radius:20px;padding:22px 16px;text-align:center;cursor:pointer;transition:all .3s;}
+.zone:hover{transform:translateY(-6px);box-shadow:0 12px 32px rgba(64,145,108,.35);border-color:var(--g4);}
+.zone.locked{opacity:.4;cursor:not-allowed;filter:grayscale(.6);}
+.zone.done{border-color:var(--gold);box-shadow:0 0 18px rgba(255,209,102,.25);}
+.zone-ico{font-size:2.5rem;display:block;margin-bottom:9px;}
+.zone-title{font-size:1.05rem;font-weight:700;color:var(--g4);margin-bottom:5px;}
+.zone-desc{font-size:.8rem;opacity:.75;}
+.zone-stars{margin-top:9px;font-size:1.1rem;letter-spacing:2px;}
+
+/* game header */
+.ghdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;width:100%;max-width:920px;}
+.gtitle{font-size:1.45rem;font-weight:700;color:var(--g4);}
+.back-btn{background:transparent;border:1px solid var(--g4);color:var(--g4);padding:7px 18px;border-radius:20px;cursor:pointer;font-size:.88rem;font-family:inherit;transition:all .3s;}
+.back-btn:hover{background:var(--g2);color:#fff;}
+.gscore{font-size:1rem;color:var(--gold);}
+.gcont{width:100%;max-width:920px;}
+
+/* panels */
+.panel{background:var(--card);border-radius:18px;padding:22px;margin-bottom:18px;}
+.instr{background:rgba(0,0,0,.25);border-right:4px solid var(--g4);padding:14px 16px;border-radius:0 12px 12px 0;margin-bottom:18px;font-size:.9rem;line-height:1.75;}
+.pbar{width:100%;height:7px;background:rgba(0,0,0,.3);border-radius:4px;margin:8px 0;overflow:hidden;}
+.pfill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--success),var(--g4));transition:width .5s;}
+
+/* food chain */
+.org-pool{display:flex;flex-wrap:wrap;gap:10px;padding:14px;background:rgba(0,0,0,.22);border-radius:14px;min-height:85px;margin-bottom:18px;}
+.chain-row{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:center;}
+.cslot{width:110px;height:110px;border:2px dashed var(--g3);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:.78rem;text-align:center;transition:all .3s;background:rgba(0,0,0,.2);}
+.cslot.hl{border-color:var(--success);background:rgba(6,214,160,.12);transform:scale(1.07);}
+.cslot.ok{border-style:solid;border-color:var(--success);background:rgba(6,214,160,.18);}
+.cslot.bad{border-color:var(--danger);background:rgba(230,57,70,.15);animation:shake .45s ease;}
+@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-9px);}75%{transform:translateX(9px);}}
+.carrow{color:var(--g3);font-size:1.4rem;flex-shrink:0;width:25px;text-align:center;}
+/* chain layout with decomposer on side */
+.chain-grid{display:grid;grid-template-columns:110px 25px 110px 25px 110px 25px 110px;justify-content:center;gap:4px 0;}
+.chain-darrow{width:110px;text-align:center;color:var(--g4);font-size:1.2rem;flex-shrink:0;}
+.chain-darrow-sp{width:25px;flex-shrink:0;}
+.chain-hbar{border-top:2px dashed var(--g3);width:490px;max-width:92%;margin:0 auto 2px;}
+.chain-decomp-lbl{text-align:center;font-size:.78rem;color:var(--g3);background:rgba(82,183,136,.1);border:1px dashed var(--g3);border-radius:20px;padding:4px 14px;margin:2px 0;}
+.ocard{background:linear-gradient(135deg,#2d6a4f,#1b4332);border:2px solid var(--g3);border-radius:11px;padding:9px;cursor:grab;text-align:center;width:98px;transition:all .3s;user-select:none;}
+.ocard:hover{transform:translateY(-3px);box-shadow:0 5px 18px rgba(116,198,157,.35);}
+.ocard.dragging{opacity:.4;}
+.ocard.placed{opacity:.3;cursor:not-allowed;}
+.o-emoji{font-size:2rem;display:block;margin-bottom:4px;}
+.o-name{font-size:.74rem;font-weight:600;}
+.chain-lbl{font-size:.7rem;color:var(--g3);margin-bottom:3px;}
+
+/* natural selection */
+.env-box{background:linear-gradient(135deg,#0a3622,#1a5c38);border-radius:14px;padding:18px;text-align:center;margin-bottom:18px;border:2px solid var(--g2);}
+.env-ico{font-size:3.2rem;display:block;margin-bottom:8px;}
+.env-title{font-size:1.15rem;font-weight:700;color:var(--warn);margin-bottom:4px;}
+.org-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:16px 0;}
+.sorg{background:var(--card2);border:2px solid var(--g1);border-radius:14px;padding:18px;text-align:center;cursor:pointer;transition:all .3s;}
+.sorg:hover{transform:translateY(-4px);border-color:var(--g4);box-shadow:0 5px 18px rgba(116,198,157,.25);}
+.sorg.sel{border-color:var(--success);background:rgba(6,214,160,.12);}
+.sorg.elim{opacity:.3;filter:grayscale(1);border-color:var(--danger);}
+.big-emoji{font-size:2.7rem;display:block;margin-bottom:8px;}
+.trait-b{display:inline-block;background:rgba(116,198,157,.15);border:1px solid var(--g3);border-radius:20px;padding:3px 8px;font-size:.71rem;margin:2px;}
+
+/* symbiosis */
+.sym-pair{display:flex;align-items:center;justify-content:center;gap:18px;background:rgba(0,0,0,.2);border-radius:14px;padding:22px;margin-bottom:18px;}
+.sym-org{text-align:center;flex:1;}
+.sym-emoji{font-size:3.2rem;display:block;margin-bottom:8px;}
+.sym-conn{font-size:1.8rem;color:var(--g4);}
+.rel-opts{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+.ropt{background:var(--card2);border:2px solid var(--g1);border-radius:14px;padding:14px 20px;cursor:pointer;text-align:center;transition:all .3s;min-width:135px;}
+.ropt:hover{transform:translateY(-3px);border-color:var(--g4);}
+.rtype{font-size:1.4rem;font-weight:900;display:block;margin-bottom:4px;}
+.rname{font-size:.85rem;}
+
+/* evolution */
+.species-box{text-align:center;margin-bottom:22px;}
+.sp-big{font-size:4.5rem;display:block;animation:breathe 3s ease-in-out infinite;}
+@keyframes breathe{0%,100%{transform:scale(1);}50%{transform:scale(1.1);}}
+.trait-list{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin:12px 0;}
+.ttag{background:linear-gradient(135deg,var(--g1),var(--g2));border-radius:20px;padding:5px 14px;font-size:.82rem;border:1px solid var(--g3);}
+.gen-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,209,102,.1);border:1px solid var(--gold);padding:7px 18px;border-radius:50px;font-size:.95rem;color:var(--gold);margin:8px 0;}
+.pressure{background:linear-gradient(135deg,#3d0000,#5c0909);border:2px solid var(--danger);border-radius:14px;padding:18px;text-align:center;margin:18px 0;}
+.p-ico{font-size:2.4rem;display:block;margin-bottom:8px;}
+.adapt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:14px;margin-top:18px;}
+.acard{background:var(--card2);border:2px solid var(--g1);border-radius:14px;padding:18px;cursor:pointer;text-align:center;transition:all .3s;}
+.acard:hover{border-color:var(--g4);transform:translateY(-3px);}
+.acard.sel{border-color:var(--sky);background:rgba(17,138,178,.18);box-shadow:0 0 14px rgba(17,138,178,.35);}
+.a-emoji{font-size:2.3rem;display:block;margin-bottom:8px;}
+.a-type{font-size:.7rem;color:var(--g3);margin-bottom:4px;}
+.a-name{font-size:.88rem;font-weight:600;}
+.a-eff{font-size:.78rem;margin-top:6px;}
+
+/* ecosystem */
+.eco-choices{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:14px;margin-top:18px;}
+.eco-choice{background:var(--card2);border:2px solid var(--g1);border-radius:14px;padding:18px;cursor:pointer;text-align:center;transition:all .3s;line-height:1.55;font-size:.9rem;}
+.eco-choice:hover{border-color:var(--g4);transform:translateY(-3px);box-shadow:0 5px 18px rgba(116,198,157,.25);}
+
+/* popup */
+.overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.72);z-index:999;}
+.popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:linear-gradient(135deg,#1b4332,#2d6a4f);border:2px solid var(--g4);border-radius:20px;padding:28px;max-width:480px;width:92%;z-index:1000;animation:popin .3s ease;}
+@keyframes popin{from{transform:translate(-50%,-50%) scale(.8);opacity:0;}to{transform:translate(-50%,-50%) scale(1);opacity:1;}}
+.popup h3{color:var(--gold);font-size:1.25rem;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--g3);}
+.popup p{line-height:1.7;font-size:.93rem;}
+
+/* feedback banner */
+.fb{position:fixed;top:28px;left:50%;transform:translateX(-50%);padding:13px 28px;border-radius:50px;font-size:1.1rem;font-weight:700;z-index:2000;animation:fbslide .3s ease,fbfade .45s ease 2.3s forwards;pointer-events:none;}
+@keyframes fbslide{from{transform:translateX(-50%) translateY(-50px);opacity:0;}to{transform:translateX(-50%) translateY(0);opacity:1;}}
+@keyframes fbfade{to{opacity:0;}}
+.fb-ok{background:linear-gradient(135deg,#06d6a0,#118ab2);color:#fff;box-shadow:0 5px 28px rgba(6,214,160,.45);}
+.fb-err{background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;box-shadow:0 5px 28px rgba(230,57,70,.45);}
+
+/* score pop */
+.spop{position:fixed;z-index:3000;font-size:1.4rem;font-weight:900;color:var(--gold);pointer-events:none;animation:sfloat 1.4s ease-out forwards;}
+@keyframes sfloat{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-70px) scale(1.4);}}
+
+/* completion */
+.complete-wrap{text-align:center;padding:30px;}
+.c-ico{font-size:4.5rem;display:block;margin-bottom:18px;animation:cbounce 1s ease infinite alternate;}
+@keyframes cbounce{from{transform:translateY(0) rotate(-5deg);}to{transform:translateY(-18px) rotate(5deg);}}
+.lessons{background:rgba(0,0,0,.22);border-radius:14px;padding:18px;margin:20px 0;text-align:right;}
+.lessons li{list-style:none;line-height:2.1;}
+
+/* encyclopedia */
+.enc-btn{position:fixed;bottom:20px;left:20px;background:linear-gradient(135deg,#118ab2,#06d6a0);border:none;border-radius:50%;width:54px;height:54px;font-size:1.4rem;cursor:pointer;box-shadow:0 5px 18px rgba(6,214,160,.35);z-index:500;transition:all .3s;display:flex;align-items:center;justify-content:center;}
+.enc-btn:hover{transform:scale(1.12);}
+.enc-panel{position:fixed;top:0;right:0;width:330px;height:100vh;background:linear-gradient(135deg,#071a0f,#1b4332);border-left:2px solid var(--g4);z-index:900;overflow-y:auto;padding:18px;transform:translateX(110%);transition:transform .3s ease;}
+.enc-panel.open{transform:translateX(0);}
+.enc-entry{background:var(--card);border-radius:10px;padding:13px;margin-bottom:12px;border-right:3px solid var(--g3);cursor:pointer;transition:all .3s;}
+.enc-entry:hover{border-right-color:var(--gold);transform:translateX(-3px);}
+.enc-entry h4{color:var(--gold);margin-bottom:5px;font-size:.92rem;}
+.enc-entry p{font-size:.78rem;opacity:.8;line-height:1.55;display:none;}
+.enc-entry.exp p{display:block;}
+
+@media(max-width:600px){
+  .title-main{font-size:2.3rem;}
+  .zones{grid-template-columns:1fr 1fr;}
+  .cslot{width:85px;height:85px;}
+  .ocard{width:78px;}
+}
+</style>
+</head>
+<body>
+
+<div id="particles"></div>
+<div id="app">
+
+<!-- ══ TITLE ══ -->
+<div class="screen active" id="title-screen">
+  <div style="font-size:5rem;text-align:center;margin-bottom:20px;animation:breathe 3s ease-in-out infinite;">🌍</div>
+  <h1 class="title-main">EcoEvolution</h1>
+  <p class="title-sub">מסע לתוך עולם האקולוגיה והאבולוציה</p>
+  <p class="title-desc">
+    חקרו יחסי גומלין, בנו שרשראות מזון,<br>
+    הנחו תהליכי אבולוציה ושמרו על שיווי משקל<br>
+    במערכת אקולוגית חיה ומשתנה.
+  </p>
+  <button class="btn" onclick="G.goMap()">🚀 התחל את המסע</button>
+</div>
+
+<!-- ══ MAP ══ -->
+<div class="screen" id="map-screen">
+  <div class="map-hdr">
+    <h2>🗺️ מפת האקוסיסטם</h2>
+    <div class="score-bar">⭐ ניקוד כולל: <span id="total-score">0</span></div>
+  </div>
+  <div class="zones" id="zones-container"></div>
+</div>
+
+<!-- ══ GAMES ══ -->
+<div class="screen" id="game-0">
+  <div class="ghdr">
+    <button class="back-btn" onclick="G.goMap()">← חזור</button>
+    <div class="gtitle">🍃 שרשרת המזון</div>
+    <div class="gscore">⭐ <span id="sc0">0</span></div>
+  </div>
+  <div class="gcont" id="gc0"></div>
+</div>
+
+<div class="screen" id="game-1">
+  <div class="ghdr">
+    <button class="back-btn" onclick="G.goMap()">← חזור</button>
+    <div class="gtitle">🦎 ברירה טבעית</div>
+    <div class="gscore">⭐ <span id="sc1">0</span></div>
+  </div>
+  <div class="gcont" id="gc1"></div>
+</div>
+
+<div class="screen" id="game-2">
+  <div class="ghdr">
+    <button class="back-btn" onclick="G.goMap()">← חזור</button>
+    <div class="gtitle">🌸 יחסי גומלין</div>
+    <div class="gscore">⭐ <span id="sc2">0</span></div>
+  </div>
+  <div class="gcont" id="gc2"></div>
+</div>
+
+<div class="screen" id="game-3">
+  <div class="ghdr">
+    <button class="back-btn" onclick="G.goMap()">← חזור</button>
+    <div class="gtitle">🧬 מסע האבולוציה</div>
+    <div class="gscore">⭐ <span id="sc3">0</span></div>
+  </div>
+  <div class="gcont" id="gc3"></div>
+</div>
+
+<div class="screen" id="game-4">
+  <div class="ghdr">
+    <button class="back-btn" onclick="G.goMap()">← חזור</button>
+    <div class="gtitle">⚖️ שיווי משקל</div>
+    <div class="gscore">⭐ <span id="sc4">0</span></div>
+  </div>
+  <div class="gcont" id="gc4"></div>
+</div>
+
+</div><!-- #app -->
+
+<button class="enc-btn" onclick="G.toggleEnc()" title="מילון מושגים">📚</button>
+<div class="enc-panel" id="enc-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+    <h3 style="color:var(--gold)">📚 מילון מושגים</h3>
+    <button onclick="G.toggleEnc()" style="background:transparent;border:none;color:var(--text);font-size:1.5rem;cursor:pointer;">✕</button>
+  </div>
+  <div id="enc-content"></div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════
+   THE BUG-FREE PATTERN:
+   Declare G = {} FIRST, then assign methods to it.
+   (Inside an IIFE assigned to G, the variable G
+    is not yet defined — that was the original bug.)
+════════════════════════════════════════════════ */
+const G = {};
+
+/* ══════════════ DATA ══════════════ */
+
+const CONCEPTS = [
+  {name:'מערכת אקולוגית',def:'כלל המרכיבים הביוטיים (יצורים חיים) והאביוטיים (תנאי סביבה ומשאבים) המאפשרים קיום יחסי גומלין בבית גידול מסוים.'},
+  {name:'בית גידול',def:'המקום שבו היצור החי שוכן ומתפתח בדרך כלל. יכול להיות ביצה, עלה, מדבר, ים או יער.'},
+  {name:'חברה',def:'המרכיב הביוטי של מערכת אקולוגית — אוסף מינים החיים יחד ומקיימים יחסי גומלין.'},
+  {name:'שרשרת מזון',def:'יצורים חיים הניזונים זה מזה ומצטרפים לשרשרת. מבנה: יצרן → צרכן ראשוני → שניוני → שלישוני → מפרק. חומרים ואנרגיה עוברים בשרשרת.'},
+  {name:'מארג מזון',def:'מספר שרשראות מזון השלובות זו בזו. מצב קיים בטבע — מקנה יציבות למערכת כי כל אורגניזם ניזון ממספר מקורות.'},
+  {name:'אוטוטרופים (יצרנים)',def:'מייצרים חומר אורגני מחומרים אנאורגניים בעזרת אנרגיית האור בפוטוסינתזה. חשיבות משולשת: מקור חומר אורגני, מקור חמצן, ויסות פד"ח.'},
+  {name:'הטרוטרופים (צרכנים)',def:'חייבים לקבל חומר אורגני מוכן ממקור חיצוני. כוללים צמחונים, טורפים ומפרקים.'},
+  {name:'מפרקים',def:'חיידקים ופטריות המפרישים אנזימים ומפרקים חומר אורגני לאנאורגני. ממחזרים חומרים בבית הגידול — תפקיד קריטי!'},
+  {name:'פירמידת מזון / ביומסה',def:'תיאור היחסים הכמותיים ברמות ההזנה. יצרנים בבסיס, מעליהם צמחונים, ומעליהם טורפים. כל רמה קטנה יותר בשל אובדן אנרגיה כחום.'},
+  {name:'ברירה טבעית',def:'תהליך שבו פרטים המותאמים טוב יותר לסביבה שורדים ומעמידים יותר צאצאים. מביא לעלייה בתדירות הגנוטיפים המועדפים לאורך דורות.'},
+  {name:'אבולוציה',def:'התפתחות הדרגתית בת דורות רבים בתכונות מורפולוגיות, פיסיולוגיות והתנהגותיות. מונעת על ידי מוטציות אקראיות + ברירה טבעית.'},
+  {name:'כשירות',def:'עמידות האורגניזם — מתבטאת בעיקר ביכולתו להעמיד צאצאים פוריים. מדד מרכזי של הצלחה אבולוציונית.'},
+  {name:'שונות',def:'הבדלים בין פרטים באוכלוסייה — הכוח המניע של האבולוציה. מקורה בצירופי אללים שונים ובמוטציות אקראיות בתאי הזוויג.'},
+  {name:'התאמה',def:'שינוי שגורם לאורגניזם לפוטנציאל שרידות גבוה יותר. סוגים: מורפולוגית (מבנה/צורה), פיסיולוגית (מנגנון גוף), התנהגותית (פעולות).'},
+  {name:'הומאותרמיים',def:'אורגניזמים השומרים על טמפרטורת גוף קבועה בעזרת מנגנון הומאוסטטי פנימי. יונקים ועופות — "חיות חמות דם".'},
+  {name:'פויקילותרמיים',def:'אורגניזמים חסרי יכולת לוויסות חום פנימי. טמפרטורת גופם משתנה עם הסביבה: זוחלים, דו-חיים, חרקים.'},
+  {name:'הדדיות (מוטואליזם)',def:'שני המינים מרוויחים (+/+). דוגמאות: פרח ומאביק, חזזית (אצה+פטרייה), חיידקים במעי האדם. קואבולוציה = התפתחות הדדית.'},
+  {name:'קומנסליזם',def:'אחד מרוויח, השני לא ניזוק (+/0). דוגמה: ציפור מקננת על ענף עץ.'},
+  {name:'טפילות',def:'הטפיל מרוויח (+), הפונדקאי ניזוק (-). שונה מטריפה — הטפיל לא הורג בדרך כלל. דוגמה: יתוש ואדם.'},
+  {name:'תחרות',def:'שני הצדדים ניזוקים (-/-). מתרחשת על משאב משותף. יכולה להסתיים בדחיקה תחרותית של המין הפחות מותאם.'},
+  {name:'שיווי משקל דינמי',def:'מערכת אקולוגית שומרת על שיווי משקל — מגוון מינים ויציבות אוכלוסיות. שינויים אביוטיים (בצורת, התפרצות) או ביוטיים (מחלה, מין פולש) עלולים להפרו.'},
+  {name:'מגוון ביולוגי',def:'מספר המינים ביחידת שטח. חשוב: (1) ליציבות מארגי מזון, (2) כמקור לחומרים וגנים, (3) מבחינה מוסרית.'},
+  {name:'פוטוסינתזה',def:'ייצור חומרים אורגניים מפד"ח ומים בנוכחות אנרגיית אור. מתרחש בכלורופלסטים. תוצרים: גלוקוז + חמצן.'},
+  {name:'נשימה תאית',def:'פירוק גלוקוז בנוכחות חמצן לייצור אנרגיה. תוצרים: מים, פד"ח ואנרגיית חום (לא שמישה).'}
+];
+
+const ZONES_DEF = [
+  {ico:'🍃→🐛→🐸→🦅',title:'שרשרת המזון',      desc:'בנה שרשראות מזון נכונות בגרירה'},
+  {ico:'🦎⚡🌍',          title:'ברירה טבעית',     desc:'מי ישרוד? לחץ על הנבחרים'},
+  {ico:'🌺🤝🐝',          title:'יחסי גומלין',     desc:'זהה הדדיות, קומנסליזם, טפילות'},
+  {ico:'🧬→→🦖',          title:'מסע האבולוציה',   desc:'בחר התאמות, עצב מין שלם'},
+  {ico:'⚖️🌱💥',          title:'שיווי משקל',      desc:'ניתוח השפעות על המערכת'}
+];
+
+const CHAINS = [
+  {title:'שרשרת יבשה',orgs:[
+    {name:'דשא',        e:'🌿',r:0,hint:'יצרן — מייצר אנרגיה בפוטוסינתזה'},
+    {name:'ארנב',       e:'🐇',r:1,hint:'צרכן ראשוני — צמחוני'},
+    {name:'שועל',       e:'🦊',r:2,hint:'צרכן שניוני — טורף'},
+    {name:'נשר',        e:'🦅',r:3,hint:'צרכן שלישוני — טורף-על'},
+    {name:'פטריות',     e:'🍄',r:4,hint:'מפרק — מפרק חומר אורגני'}
+  ]},
+  {title:'שרשרת ים',orgs:[
+    {name:'אצות',       e:'🌊',r:0,hint:'יצרן — פיטופלנקטון'},
+    {name:'שרימפס',     e:'🦐',r:1,hint:'צרכן ראשוני — זואופלנקטון'},
+    {name:'דג קטן',     e:'🐟',r:2,hint:'צרכן שניוני'},
+    {name:'כרישון',     e:'🦈',r:3,hint:'צרכן שלישוני — טורף'},
+    {name:'חיידקים',    e:'🦠',r:4,hint:'מפרק — ממחזרים חומרים'}
+  ]},
+  {title:'שרשרת יער',orgs:[
+    {name:'עץ אלון',    e:'🌳',r:0,hint:'יצרן'},
+    {name:'זחל',        e:'🐛',r:1,hint:'צרכן ראשוני'},
+    {name:'ציפור',      e:'🐦',r:2,hint:'צרכן שניוני'},
+    {name:'נחש',        e:'🐍',r:3,hint:'צרכן שלישוני'},
+    {name:'עובש',       e:'🧫',r:4,hint:'מפרק'}
+  ]},
+  {title:'שרשרת אפריקה',orgs:[
+    {name:'עשב סוואנה', e:'🌾',r:0,hint:'יצרן — מייצר בפוטוסינתזה'},
+    {name:'אנטילופה',   e:'🦌',r:1,hint:'צרכן ראשוני — צמחוני'},
+    {name:'כלב ציד',    e:'🐕',r:2,hint:'צרכן שניוני — ציד אנטילופות'},
+    {name:'אריה',       e:'🦁',r:3,hint:'צרכן שלישוני — אריות ממיתים כלבי ציד'},
+    {name:'פטריות',     e:'🍄',r:4,hint:'מפרק'}
+  ]},
+  {title:'שרשרת ביצה',orgs:[
+    {name:'אצות מים',   e:'💚',r:0,hint:'יצרן'},
+    {name:'חגב מים',    e:'🦗',r:1,hint:'צרכן ראשוני'},
+    {name:'צפרדע',      e:'🐸',r:2,hint:'צרכן שניוני'},
+    {name:'נחש מים',    e:'🐍',r:3,hint:'צרכן שלישוני'},
+    {name:'חיידקי אדמה',e:'🦠',r:4,hint:'מפרק'}
+  ]}
+];
+
+const SELECTION = [
+  {env:{ico:'☀️🏜️',title:'בצורת קשה — יובש קיצוני',desc:'הגשמים פסקו לשנתיים. מזון מועט, חום עז, מים נדירים.'},
+   orgs:[
+    {e:'🦎',n:'לטאה מדברית',    traits:['עור קשה','פעילות לילית','שתן מרוכז','פויקילותרמית'],
+     ok:true, why:'מותאמת למדבר: פעילות לילית חוסכת אנרגיה, שתן מרוכז שומר מים'},
+    {e:'🐸',n:'צפרדע ים',        traits:['עור חייב להיות לח','צמאה מאוד','פויקילותרמית'],
+     ok:false,why:'עור הצפרדע חייב להישאר לח — במדבר יוביל לייבוש ומוות'},
+    {e:'🐪',n:'גמל',             traits:['דבשת שומן','שתן מרוכז','הומאותרמי'],
+     ok:true, why:'הגמל: דבשת כמאגר אנרגיה, שתן מרוכז, יכולת לעמוד ללא מים — מותאם!'},
+    {e:'🐟',n:'דג נהר',          traits:['נשימה בזימים','תלוי מים לחלוטין'],
+     ok:false,why:'ללא מים — הדג לא ישרוד בשום צורה'}
+  ]},
+  {env:{ico:'❄️🌨️',title:'גל קור קיצוני',desc:'הטמפרטורה צנחה ל-20 מינוס. שלג מכסה הכל.'},
+   orgs:[
+    {e:'🐻',n:'דוב חום',         traits:['הומאותרמי','שכבת שומן עבה','תרדמת חורף'],
+     ok:true, why:'הדוב נכנס לתרדמה, חי משומנו, ומבודד חום גוף הומאוסטטי'},
+    {e:'🦎',n:'לטאה טרופית',     traits:['פויקילותרמית','אין שומן מבודד','פעילה רק בחום'],
+     ok:false,why:'לטאה פויקילותרמית בקור = גופה יקפא. לא מותאמת כלל'},
+    {e:'🐧',n:'פינגווין',        traits:['הומאותרמי','נוצות מבודדות','שכבת שומן קוטבית'],
+     ok:true, why:'הפינגווין מותאם במיוחד לקור: נוצות + שומן + הומאותרמי'},
+    {e:'🦋',n:'פרפר (דמנית)',    traits:['מתעטף בדמנית','פויקילותרמי','מחכה לאביב'],
+     ok:true, why:'הפרפר עובר לשלב דמנית עמיד לקור — פתרון אבולוציוני חכם!'}
+  ]},
+  {env:{ico:'🦠💀',title:'מגפה מדבקת',desc:'מחלה חדשה פורצת. פוגעת באוכלוסיות צפופות וחלשות חיסונית.'},
+   orgs:[
+    {e:'🐘',n:'פיל',             traits:['מערכת חיסון חזקה','חיתי חברה','זיכרון ותקשורת'],
+     ok:true, why:'פילים מפתחים נוגדנים ומשתמשים בתקשורת קבוצתית לזיהוי חולים'},
+    {e:'🦔',n:'קיפוד',           traits:['חי לבד','מערכת חיסון מיוחדת','עמיד לרעלים'],
+     ok:true, why:'חיים לבד = פחות חשיפה; מערכת חיסון מיוחדת = עמידות טובה'},
+    {e:'🐀',n:'עכברושים (צפיפות)',traits:['צפיפות גבוהה','מגע תדיר','מערכת חיסון ממוצעת'],
+     ok:false,why:'צפיפות גבוהה = העברת מחלה מהירה מאוד בין כל הפרטים'},
+    {e:'🦅',n:'נשר',             traits:['חי בגובה','מרוחק ממקורות הדבקה','אוכל נבלות — עמיד'],
+     ok:true, why:'הנשר חי בגובה, מרוחק, ואוכל נבלות = מערכת חיסון חזקה לזיהומים'}
+  ]}
+];
+
+const SYMBIOSIS = [
+  {o1:{e:'🌺',n:'פרח'},   o2:{e:'🐝',n:'דבורת-דבש'},
+   ans:'++',exp:'הדדיות! הדבורה אוספת צוף (מרוויחה אנרגיה) ומאביקה את הפרח (מרוויח הפצת גנים). דוגמה קלאסית לקואבולוציה!'},
+  {o1:{e:'🦠',n:'חיידקי E.coli'},o2:{e:'🧑',n:'מעי אדם'},
+   ans:'++',exp:'הדדיות! החיידקים מקבלים מקום ומזון, ובתמורה מסייעים בעיכול ומייצרים ויטמינים. שיתוף פעולה מדהים!'},
+  {o1:{e:'🐦',n:'ציפור'},  o2:{e:'🌳',n:'עץ'},
+   ans:'+0',exp:'קומנסליזם! הציפור בונה קן על העץ ומרוויחה מקום גידול בטוח. העץ לא ניזוק ולא מרוויח. (+/0)'},
+  {o1:{e:'🦟',n:'יתוש'},   o2:{e:'🧑',n:'אדם'},
+   ans:'+-',exp:'טפילות! היתוש (הטפיל) ינוצל דם האדם (הפונדקאי), מגרה ועלול להדביק במחלות. (+/-)'},
+  {o1:{e:'🌿',n:'ורד'},    o2:{e:'🌿',n:'קוץ פולש'},
+   ans:'--',exp:'תחרות! שני הצמחים מתחרים על מים, מינרלים ואור שמש. שניהם עלולים להינזק (-/-).'},
+  {o1:{e:'🍄',n:'מיקוריזה (פטרייה)'},o2:{e:'🌲',n:'עץ אורן'},
+   ans:'++',exp:'הדדיות! הפטרייה מגדילה שטח ספיגת השורשים ועוזרת לעץ. העץ מספק לפטרייה סוכרים. (+/+)'},
+  {o1:{e:'🦈',n:'כריש'},   o2:{e:'🐟',n:'דג נקאי'},
+   ans:'++',exp:'הדדיות! הדג מנקה את הכריש מטפילים (מרוויח מזון), הכריש מתנקה (מרוויח בריאות). (+/+)'},
+  {o1:{e:'🌾',n:'חיטה'},   o2:{e:'🌿',n:'עשב שוטה'},
+   ans:'--',exp:'תחרות! שניהם מתחרים על מים, מינרלים ואור. שניהם עלולים להינזק (-/-).'}
+];
+
+const EVOLUTION = [
+  {pressure:{ico:'🏜️',t:'הסביבה הופכת למדבר',d:'טמפרטורות עולות, גשמים פוחתים, צמחייה מצטמצמת.'},
+   choices:[
+    {e:'👁️',type:'מורפולוגי',    n:'עיניים גדולות לראיית לילה', v:15,why:'פעילות לילית חוסכת מים ואנרגיה. ראיית לילה = יתרון עצום!'},
+    {e:'💧',type:'פיזיולוגי',    n:'כליות מרכזות שתן',           v:20,why:'שתן מרוכז = שמירת מים קריטית. ההתאמה הפיסיולוגית הטובה ביותר למדבר!'},
+    {e:'🌊',type:'פיזיולוגי',    n:'הזעה מוגברת',                v:-12,why:'הזעה מרובה במדבר גורמת לאיבוד מים קטלני. מזיק!'},
+    {e:'👂',type:'מורפולוגי',    n:'אוזניים גדולות לפיזור חום',  v:12,why:'כמו שועל הפנק — אוזניים גדולות מפזרות חום עודף מהגוף.'}
+  ]},
+  {pressure:{ico:'🦁',t:'עלייה בלחץ הציד',d:'טורפים חדשים הגיעו. כל חשיפה עלולה להיות קטלנית.'},
+   choices:[
+    {e:'🎨',type:'מורפולוגי',    n:'צבע הסוואה',                 v:18,why:'הסוואה לרקע הסביבה = ירידה עצומה בסיכון. ההתאמה המורפולוגית הטובה ביותר!'},
+    {e:'🌙',type:'התנהגותי',     n:'מעבר לפעילות לילית',         v:15,why:'פעילות בחשכה מקטינה חשיפה לרוב הטורפים הפעילים ביום.'},
+    {e:'🌈',type:'מורפולוגי',    n:'צבעוניות בולטת',             v:-15,why:'צבעים בולטים ימשכו טורפים! מזיק (למעט אצל יצורים רעילים).'},
+    {e:'👃',type:'פיזיולוגי',    n:'חוש ריח חד',                 v:10,why:'זיהוי ריח טורף ממרחק גדול מאפשר הימלטות בזמן.'}
+  ]},
+  {pressure:{ico:'🔥🌳',t:'שרפת יערות',d:'שרפה הרסנית כיסתה את בית הגידול. צמחייה נשרפה, מחבואים נעלמו, הקרקע שחורה.'},
+   choices:[
+    {e:'🖤',type:'מורפולוגי',   n:'פיגמנטציה כהה — הסוואה לאפר',v:18,why:'צבע כהה על רקע אדמת שרופה = הסוואה מצוינת מפני טורפים! התאמה מורפולוגית מצוינת.'},
+    {e:'🏃',type:'התנהגותי',    n:'נדידה לאזור שלא נשרף',        v:16,why:'מציאת בית גידול חדש עם מחסה ומזון. פתרון התנהגותי יעיל!'},
+    {e:'🌙',type:'התנהגותי',    n:'מעבר לפעילות לילית',          v:13,why:'פעילות בחשכה = פחות חשיפה לטורפים בשטח הפתוח. יתרון התנהגותי.'},
+    {e:'🌞',type:'מורפולוגי',   n:'פיגמנטציה בהירה — בולטת',    v:-16,why:'צבע בהיר על רקע שחור = גלוי לחלוטין לכל טורף. מזיק מאוד!'}
+  ]},
+  {pressure:{ico:'🦠',t:'נגיף מוטנטי',d:'מחלה חדשנית מדבקת. מערכת חיסון חזקה היא הכל.'},
+   choices:[
+    {e:'🛡️',type:'פיזיולוגי',   n:'מערכת חיסון מחוזקת',        v:22,why:'מערכת חיסון חזקה = ההתאמה הפיסיולוגית האידיאלית!'},
+    {e:'🏃',type:'התנהגותי',     n:'הגירה ממוקדי הדבקה',         v:14,why:'ריחוק ממוקדי ההדבקה — פתרון התנהגותי מחוכם.'},
+    {e:'👥',type:'התנהגותי',     n:'גידול בצפיפות הקבוצה',       v:-18,why:'צפיפות גבוהה = העברת מחלה מהירה. מזיק מאוד!'},
+    {e:'🦴',type:'מורפולוגי',    n:'שריון עצמות עבה',            v:2, why:'שריון לא עוזר נגד נגיף. כמעט ללא תועלת.'}
+  ]}
+];
+
+const ECOSYSTEM = [
+  {ico:'🌳🐇🦊🦅',setup:'עצים ← ארנבים ← שועלים ← נשרים',
+   q:'ציידים חסלו 80% מאוכלוסיית הנשרים. מה יקרה?',
+   opts:[
+    {t:'אוכלוסיית השועלים תגדל, ואוכלוסיית הארנבים תקטן',ok:true,
+     exp:'✅ נכון! פחות נשרים → פחות ציד על שועלים → יותר שועלים → יותר ציד על ארנבים → פחות ארנבים. שיווי משקל דינמי!'},
+    {t:'לא יהיה שינוי — הטבע יאזן מיד',ok:false,
+     exp:'❌ שיווי משקל דינמי לוקח זמן. תמיד יש השפעה מדורגת בכל שרשרת.'},
+    {t:'אוכלוסיית הארנבים תגדל, השועלים ייעלמו',ok:false,
+     exp:'❌ ללא לחץ מנשרים, השועלים דווקא יתרבו ויצודו יותר ארנבים.'},
+    {t:'המערכת כולה תתמוטט מיידית',ok:false,
+     exp:'❌ המערכת תתאים עצמה הדרגתית, לא קריסה מיידית.'}
+  ]},
+  {ico:'🌾🦗🐸🐍',setup:'עשב ← חגבים ← צפרדעים ← נחשים',
+   q:'מגפה מחקה 90% מהצפרדעים. מה יקרה?',
+   opts:[
+    {t:'חגבים יתרבו מאוד ויפגעו בצמחייה; הנחשים יסבלו ממחסור',ok:true,
+     exp:'✅ נכון! פחות צפרדעים → התפוצצות חגבים → פגיעה בצמחייה. גם הנחשים יסבלו ממחסור במזון.'},
+    {t:'הכל יישאר כרגיל',ok:false,
+     exp:'❌ הצפרדעים חיוניות לאיזון. היעדרן משבש את כל הרמות.'},
+    {t:'הנחשים ייצודו חגבים ישירות',ok:false,
+     exp:'❌ נחשים לא אוכלים חגבים בדרך כלל. שרשרת המזון תישבר.'},
+    {t:'עצי היער יצמחו טוב יותר',ok:false,
+     exp:'❌ ללא צפרדעים, יותר חגבים → יותר נזק לצמחייה, לא פחות!'}
+  ]},
+  {ico:'🌊🦐🐟🐋',setup:'פיטופלנקטון ← קופיפודים ← סרדינים ← לוויתנים',
+   q:'זיהום כימי השמיד את הפיטופלנקטון. מה ההשפעה?',
+   opts:[
+    {t:'קריסת כל שרשרת המזון הימית',ok:true,
+     exp:'✅ נכון! הפיטופלנקטון הוא היצרן — ללא יצרן, כל שרשרת המזון תתמוטט. זו חשיבות האוטוטרופים: בסיס כל החיים!'},
+    {t:'רק הקופיפודים ייפגעו',ok:false,
+     exp:'❌ ללא יצרן, כל הרמות ייפגעו. ההשפעה מדורגת כלפי מעלה לכל השרשרת.'},
+    {t:'הלוויתנים ימצאו מזון חלופי',ok:false,
+     exp:'❌ בטווח הקצר אין חלופה. כשנעלם הבסיס — כל השרשרת קורסת.'},
+    {t:'הים יתאושש בשבוע',ok:false,
+     exp:'❌ שחזור מערכת אקולוגית לאחר קריסה לוקח שנים רבות!'}
+  ]},
+  {ico:'🌴🐛🦜🐆',setup:'צמחייה ← חרקים ← ציפורים ← נמר',
+   q:'הוכנס נחש פולש גדול — אוכל ציפורים. מה יקרה?',
+   opts:[
+    {t:'פיצוץ באוכלוסיית החרקים ופגיעה בצמחייה',ok:true,
+     exp:'✅ נכון! נחש ינצל ציפורים → פחות ציפורים → יותר חרקים → נזק לצמחייה. מינים פולשים = גורם מרכזי לפגיעה במגוון הביולוגי!'},
+    {t:'הנחש יישמיד הכל תוך שבוע',ok:false,
+     exp:'❌ לא ריאלי. הנחש יגרום נזק, אבל שיווי משקל דינמי ופועל לאורך זמן.'},
+    {t:'הנמרים יתרבו כי תחרות הוסרה',ok:false,
+     exp:'❌ הנחש ינצל גם ציפורים שהנמרים צדו, לא ישפיע לטובת הנמרים.'},
+    {t:'הצמחייה תשגשג ללא פגיעה',ok:false,
+     exp:'❌ יותר חרקים = יותר נזק לצמחייה, לא פחות!'}
+  ]}
+];
+
+/* ══════════════ STATE ══════════════ */
+const state = {
+  scores:   [0,0,0,0,0],
+  stars:    [0,0,0,0,0],
+  done:     [false,false,false,false,false],
+  unlocked: [true,false,false,false,false],
+  chainLvl:    0,
+  chainFilled: {},
+  dragging:    null,
+  selRound:    0,
+  selSel:      new Set(),
+  symRound:    0,
+  evoGen:      0,
+  evoFitness:  50,
+  evoTraits:   [],
+  evoSelected: new Set(),
+  ecoRound:    0,
+  encOpen:     false
+};
+
+/* ══════════════ UTILITIES ══════════════ */
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function fb(msg, ok) {
+  document.querySelectorAll('.fb').forEach(e => e.remove());
+  const el = document.createElement('div');
+  el.className = 'fb ' + (ok ? 'fb-ok' : 'fb-err');
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 2700);
+}
+
+function spop(pts) {
+  const el = document.createElement('div');
+  el.className = 'spop';
+  el.textContent = '+' + pts + ' ⭐';
+  el.style.left = (Math.random() * 250 + 350) + 'px';
+  el.style.top  = '30%';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1500);
+}
+
+function addPts(gi, pts) {
+  if (pts <= 0) return;
+  state.scores[gi] += pts;
+  const sc = document.getElementById('sc' + gi);
+  if (sc) sc.textContent = state.scores[gi];
+  spop(pts);
+  updateTotal();
+}
+
+function updateTotal() {
+  const tot = state.scores.reduce((a, b) => a + b, 0);
+  const el = document.getElementById('total-score');
+  if (el) el.textContent = tot;
+}
+
+function starsHTML(n) {
+  return '⭐'.repeat(n) + '☆'.repeat(3 - n);
+}
+
+function openPopup(html) {
+  closePopups();
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  const pp = document.createElement('div');
+  pp.className = 'popup';
+  pp.innerHTML = html;
+  document.body.appendChild(ov);
+  document.body.appendChild(pp);
+  ov.onclick = closePopups;
+  return { ov, pp };
+}
+
+function closePopups() {
+  document.querySelectorAll('.overlay, .popup').forEach(e => e.remove());
+}
+
+/* ══════════════ MAP ══════════════ */
+function buildMap() {
+  const c = document.getElementById('zones-container');
+  if (!c) return;
+  c.innerHTML = ZONES_DEF.map((z, i) => `
+    <div class="zone${state.unlocked[i] ? '' : ' locked'}${state.done[i] ? ' done' : ''}"
+         id="zone${i}" onclick="G.startGame(${i})">
+      <span class="zone-ico">${z.ico}</span>
+      <div class="zone-title">${z.title}</div>
+      <div class="zone-desc">${z.desc}</div>
+      <div class="zone-stars" id="zstars${i}">${starsHTML(state.stars[i])}</div>
+    </div>`).join('');
+}
+
+function refreshMap() {
+  ZONES_DEF.forEach((_, i) => {
+    const el = document.getElementById('zone' + i);
+    if (!el) return;
+    el.className = 'zone' + (state.unlocked[i] ? '' : ' locked') + (state.done[i] ? ' done' : '');
+    const s = document.getElementById('zstars' + i);
+    if (s) s.innerHTML = starsHTML(state.stars[i]);
+  });
+  updateTotal();
+}
+
+G.goMap = function () {
+  refreshMap();
+  show('map-screen');
+};
+
+G.startGame = function (i) {
+  if (!state.unlocked[i]) { fb('🔒 השלם את השלב הקודם תחילה!', false); return; }
+  show('game-' + i);
+  [initChain, initSel, initSym, initEvo, initEco][i]();
+};
+
+function completeGame(gi, bonus) {
+  addPts(gi, bonus);
+  const score = state.scores[gi];
+  const stars = score >= 170 ? 3 : score >= 90 ? 2 : 1;
+  state.stars[gi] = stars;
+  state.done[gi]  = true;
+  if (gi + 1 < 5) state.unlocked[gi + 1] = true;
+
+  const titles = ['שרשרת המזון', 'ברירה טבעית', 'יחסי גומלין', 'מסע האבולוציה', 'שיווי משקל'];
+  const icos   = ['🍃', '🦎', '🌺', '🧬', '⚖️'];
+  const lsns   = [
+    ['🌿 יצרנים מייצרים אנרגיה בפוטוסינתזה', '🐛 צרכנים תלויים ביצרנים', '🍄 מפרקים ממחזרים חומרים', '🔗 כל חוליה חיונית לשרשרת'],
+    ['🎲 מוטציות הן אקראיות', '🏆 ברירה טבעית מעדיפה המותאמים', '🌍 הסביבה קובעת מי ישרוד', '🔄 האוכלוסייה משתנה על פני דורות'],
+    ['++ הדדיות — שניהם מרוויחים', '+0 קומנסליזם — אחד מרוויח, שני ניטרלי', '+- טפילות — טפיל מרוויח, פונדקאי ניזוק', '⚡ קואבולוציה = התפתחות הדדית'],
+    ['🧬 מוטציות יוצרות שונות', '🌍 הסביבה קובעת אילו תכונות מועילות', '📊 כשירות = יכולת להעמיד צאצאים', '⏳ אבולוציה = שינוי על פני דורות'],
+    ['🔗 כל האורגניזמים קשורים', '⚖️ פגיעה בחוליה אחת משפיעה על הכל', '🌈 מגוון ביולוגי = יציבות', '🔄 שיווי המשקל תמיד דינמי']
+  ];
+
+  const gc = document.getElementById('gc' + gi);
+  if (!gc) return;
+  gc.innerHTML = `
+    <div class="complete-wrap">
+      <span class="c-ico">${icos[gi]}</span>
+      <h2 style="font-size:2rem;color:var(--gold);margin-bottom:8px">כל הכבוד! 🎉</h2>
+      <p style="font-size:1.05rem;margin-bottom:18px">השלמת את "<b>${titles[gi]}</b>"</p>
+      <div style="font-size:2rem;margin:14px 0;letter-spacing:4px">${starsHTML(stars)}</div>
+      <div style="font-size:1.4rem;color:var(--gold);margin-bottom:24px">ניקוד: ${score}</div>
+      <div class="lessons">
+        <b style="color:var(--g4)">📚 מה למדנו:</b>
+        <ul style="margin-top:10px">${lsns[gi].map(l => `<li>${l}</li>`).join('')}</ul>
+      </div>
+      <button class="btn" onclick="G.goMap()">🗺️ חזור למפה</button>
+    </div>`;
+}
+
+/* ══════════════ GAME 0 – FOOD CHAIN ══════════════ */
+function initChain() {
+  state.chainLvl   = 0;
+  state.scores[0]  = 0;
+  const sc = document.getElementById('sc0');
+  if (sc) sc.textContent = 0;
+  renderChain();
+}
+
+function renderChain() {
+  const lv = CHAINS[state.chainLvl % CHAINS.length];
+  const labels   = ['יצרן', 'צרכן ראשוני', 'צרכן שניוני', 'צרכן שלישוני', 'מפרק'];
+  const shuffled = [...lv.orgs].sort(() => Math.random() - 0.5);
+  state.chainFilled = {};
+
+  document.getElementById('gc0').innerHTML = `
+    <div class="instr">
+      <b>🎯 המשימה:</b> גרור כל יצור למקומו הנכון בשרשרת.<br>
+      סדר: <b>יצרן → צרכן ראשוני → שניוני → שלישוני → מפרק</b>
+    </div>
+    <div style="text-align:center;margin-bottom:12px;color:var(--g4)">
+      שרשרת <b>${state.chainLvl + 1}</b> מתוך 5 — ${lv.title}
+    </div>
+    <div class="pbar"><div class="pfill" style="width:${state.chainLvl * 20}%"></div></div>
+    <div class="panel">
+      <div style="font-size:.82rem;color:var(--text2);margin-bottom:8px">יצורים — גרור לשרשרת:</div>
+      <div class="org-pool" id="org-pool">
+        ${shuffled.map(o => `
+          <div class="ocard" id="oc${o.r}" draggable="true" data-r="${o.r}"
+               ondragstart="G.ds(event)" ondragend="G.de(event)" title="${o.hint}">
+            <span class="o-emoji">${o.e}</span>
+            <span class="o-name">${o.name}</span>
+          </div>`).join('')}
+      </div>
+      <!-- שורת השרשרת הראשית: רמות 0-3 -->
+      <div class="chain-grid">
+        ${[0,1,2,3].map(i =>
+          (i > 0 ? '<div class="carrow">→</div>' : '') +
+          `<div class="cslot" id="cs${i}" data-r="${i}"
+                ondragover="G.dov(event)" ondragleave="G.dl(event)" ondrop="G.dp(event,${i})">
+             <span class="chain-lbl">${labels[i]}</span>
+             <span id="csi${i}" style="font-size:1.8rem"></span>
+             <span id="csnm${i}" style="font-size:.7rem;margin-top:2px"></span>
+           </div>`
+        ).join('')}
+      </div>
+      <!-- חצים כלפי מטה, מיושרים מתחת לכל חוליה -->
+      <div style="display:flex;justify-content:center;margin-top:4px">
+        <div class="chain-darrow">↓</div>
+        <div class="chain-darrow-sp"></div>
+        <div class="chain-darrow">↓</div>
+        <div class="chain-darrow-sp"></div>
+        <div class="chain-darrow">↓</div>
+        <div class="chain-darrow-sp"></div>
+        <div class="chain-darrow">↓</div>
+      </div>
+      <!-- קו אופקי מחבר -->
+      <div class="chain-hbar"></div>
+      <!-- חץ מרכזי כלפי המפרק -->
+      <div style="text-align:center;color:var(--g4);font-size:1.4rem;line-height:1">↓</div>
+      <div class="chain-decomp-lbl">♻️ מפרק — מפרק חומר אורגני מכל הרמות</div>
+      <!-- חריץ המפרק -->
+      <div style="display:flex;justify-content:center;margin-top:4px">
+        <div class="cslot" id="cs4" data-r="4"
+             ondragover="G.dov(event)" ondragleave="G.dl(event)" ondrop="G.dp(event,4)">
+          <span class="chain-lbl">${labels[4]}</span>
+          <span id="csi4" style="font-size:1.8rem"></span>
+          <span id="csnm4" style="font-size:.7rem;margin-top:2px"></span>
+        </div>
+      </div>
+    </div>`;
+}
+
+G.ds = function (e) {                           // dragstart
+  const c = e.currentTarget;
+  state.dragging = { r: parseInt(c.dataset.r), el: c };
+  c.classList.add('dragging');
+  e.dataTransfer.setData('text', c.dataset.r);
+};
+G.de = function (e) { e.currentTarget.classList.remove('dragging'); };  // dragend
+G.dov = function (e) { e.preventDefault(); e.currentTarget.classList.add('hl'); };    // dragover
+G.dl  = function (e) { e.currentTarget.classList.remove('hl'); };                      // dragleave
+
+G.dp = function (e, slotR) {                    // drop
+  e.preventDefault();
+  const slot = document.getElementById('cs' + slotR);
+  slot.classList.remove('hl');
+  if (!state.dragging) return;
+  if (state.chainFilled[slotR]) { fb('⚠️ חריץ זה כבר מלא!', false); return; }
+
+  const dragR = state.dragging.r;
+  const card  = state.dragging.el;
+  state.dragging = null;
+
+  if (dragR === slotR) {
+    document.getElementById('csi'  + slotR).textContent = card.querySelector('.o-emoji').textContent;
+    document.getElementById('csnm' + slotR).textContent = card.querySelector('.o-name').textContent;
+    slot.classList.add('ok');
+    card.classList.add('placed');
+    card.setAttribute('draggable', 'false');
+    card.style.cursor = 'default';
+    state.chainFilled[slotR] = true;
+    addPts(0, 10);
+
+    if (Object.keys(state.chainFilled).length === 5) {
+      fb('🎉 שרשרת שלמה! מדהים!', true);
+      state.chainLvl++;
+      if (state.chainLvl >= 5) setTimeout(() => completeGame(0, 60), 1300);
+      else setTimeout(renderChain, 1600);
+    } else {
+      fb('✅ נכון! המשך לשאר', true);
+    }
+  } else {
+    slot.classList.add('bad');
+    setTimeout(() => slot.classList.remove('bad'), 500);
+    const labels = ['יצרן', 'צרכן ראשוני', 'צרכן שניוני', 'צרכן שלישוני', 'מפרק'];
+    fb('❌ לא נכון — חריץ זה הוא ה' + labels[slotR], false);
+  }
+};
+
+/* ══════════════ GAME 1 – NATURAL SELECTION ══════════════ */
+function initSel() {
+  state.selRound  = 0;
+  state.scores[1] = 0;
+  const sc = document.getElementById('sc1');
+  if (sc) sc.textContent = 0;
+  renderSel();
+}
+
+function renderSel() {
+  if (state.selRound >= SELECTION.length) { completeGame(1, 70); return; }
+  const rd = SELECTION[state.selRound];
+  state.selSel = new Set();
+
+  document.getElementById('gc1').innerHTML = `
+    <div class="instr"><b>🎯 המשימה:</b> לחץ על האורגניזמים שיצליחו לשרוד את השינוי הסביבתי, ואז לחץ "בדוק".</div>
+    <div style="text-align:center;color:var(--g4);margin-bottom:10px">סיבוב ${state.selRound + 1} מתוך ${SELECTION.length}</div>
+    <div class="panel">
+      <div class="env-box">
+        <span class="env-ico">${rd.env.ico}</span>
+        <div class="env-title">⚠️ ${rd.env.title}</div>
+        <div style="font-size:.88rem;margin-top:5px;opacity:.85">${rd.env.desc}</div>
+      </div>
+      <p style="text-align:center;opacity:.8;margin-bottom:14px;font-size:.9rem">לחץ על היצורים שיצליחו לשרוד 👇</p>
+      <div class="org-grid">
+        ${rd.orgs.map((o, i) => `
+          <div class="sorg" id="so${i}" onclick="G.selTog(${i})">
+            <span class="big-emoji">${o.e}</span>
+            <b style="display:block;margin-bottom:8px">${o.n}</b>
+            ${o.traits.map(t => `<span class="trait-b">${t}</span>`).join('')}
+          </div>`).join('')}
+      </div>
+      <div style="text-align:center;margin-top:18px" id="sel-actions">
+        <button class="btn" onclick="G.checkSel()">🔬 בדוק ברירה טבעית</button>
+      </div>
+    </div>`;
+}
+
+G.selTog = function (i) {
+  const el = document.getElementById('so' + i);
+  if (!el) return;
+  if (state.selSel.has(i)) { state.selSel.delete(i); el.classList.remove('sel'); }
+  else { state.selSel.add(i); el.classList.add('sel'); }
+};
+
+G.checkSel = function () {
+  const rd = SELECTION[state.selRound];
+  let correct = 0, wrong = 0;
+  rd.orgs.forEach((o, i) => {
+    const el     = document.getElementById('so' + i);
+    const chosen = state.selSel.has(i);
+    if (o.ok && chosen)  correct++;
+    if (!o.ok && chosen) wrong++;
+    if (o.ok && !chosen) wrong++;
+    el.classList.remove('sel');
+    el.style.pointerEvents = 'none';
+    if (o.ok) {
+      el.style.borderColor = 'var(--success)';
+      el.style.background  = 'rgba(6,214,160,.15)';
+      el.innerHTML += `<div style="color:var(--success);font-weight:700;margin-top:8px">✅ שורד!</div>
+                       <div style="font-size:.72rem;margin-top:4px;opacity:.85">${o.why}</div>`;
+    } else {
+      el.classList.add('elim');
+      el.innerHTML += `<div style="color:var(--danger);font-weight:700;margin-top:8px">❌ לא שורד</div>
+                       <div style="font-size:.72rem;margin-top:4px;opacity:.85">${o.why}</div>`;
+    }
+  });
+  const pts = Math.max(0, (correct - wrong) * 12);
+  if (pts > 0) addPts(1, pts);
+  const sa = document.getElementById('sel-actions');
+  if (sa) sa.innerHTML = `
+    <p style="font-size:.9rem;margin-bottom:12px;color:var(--gold)">ניקוד סיבוב: +${pts} ⭐</p>
+    <button class="btn" onclick="G.nextSel()">
+      ${state.selRound + 1 < SELECTION.length ? '➡️ סיבוב הבא' : '🏆 סיום'}
+    </button>`;
+};
+
+G.nextSel = function () { state.selRound++; renderSel(); };
+
+/* ══════════════ GAME 2 – SYMBIOSIS ══════════════ */
+function initSym() {
+  state.symRound  = 0;
+  state.scores[2] = 0;
+  const sc = document.getElementById('sc2');
+  if (sc) sc.textContent = 0;
+  renderSym();
+}
+
+function renderSym() {
+  if (state.symRound >= SYMBIOSIS.length) { completeGame(2, 50); return; }
+  const p    = SYMBIOSIS[state.symRound];
+  const opts = [
+    {v:'++', n:'הדדיות (מוטואליזם)', c:'#06d6a0'},
+    {v:'+0', n:'קומנסליזם',          c:'#118ab2'},
+    {v:'+-', n:'טפילות',              c:'#e63946'},
+    {v:'--', n:'תחרות',               c:'#f4a261'}
+  ];
+  document.getElementById('gc2').innerHTML = `
+    <div class="instr"><b>🎯 המשימה:</b> זהה את סוג יחסי הגומלין בין כל זוג אורגניזמים.</div>
+    <div class="pbar"><div class="pfill" style="width:${(state.symRound / SYMBIOSIS.length) * 100}%"></div></div>
+    <div class="panel">
+      <div style="text-align:center;color:var(--g4);margin-bottom:14px">
+        זוג ${state.symRound + 1} מתוך ${SYMBIOSIS.length}
+      </div>
+      <div class="sym-pair">
+        <div class="sym-org"><span class="sym-emoji">${p.o1.e}</span><b>${p.o1.n}</b></div>
+        <div class="sym-conn">⟷</div>
+        <div class="sym-org"><span class="sym-emoji">${p.o2.e}</span><b>${p.o2.n}</b></div>
+      </div>
+      <p style="text-align:center;margin-bottom:16px;opacity:.8">מהו סוג יחסי הגומלין?</p>
+      <div class="rel-opts">
+        ${opts.map(o => `
+          <div class="ropt" onclick="G.checkSym('${o.v}')">
+            <span class="rtype" style="color:${o.c}">${o.v}</span>
+            <span class="rname">${o.n}</span>
+          </div>`).join('')}
+      </div>
+      <div id="sym-exp" style="margin-top:18px;min-height:50px"></div>
+    </div>`;
+}
+
+G.checkSym = function (chosen) {
+  const p = SYMBIOSIS[state.symRound];
+  document.querySelectorAll('.ropt').forEach(r => { r.style.pointerEvents = 'none'; r.style.opacity = '.5'; });
+  const expEl = document.getElementById('sym-exp');
+  if (chosen === p.ans) {
+    addPts(2, 15);
+    expEl.innerHTML = `<div style="background:rgba(6,214,160,.1);border:1px solid var(--success);border-radius:12px;padding:14px;color:var(--success)">
+      ✅ <b>נכון!</b> ${p.exp}</div>`;
+    fb('✅ נכון!', true);
+  } else {
+    expEl.innerHTML = `<div style="background:rgba(230,57,70,.1);border:1px solid var(--danger);border-radius:12px;padding:14px;color:var(--danger)">
+      ❌ <b>לא נכון.</b> התשובה הנכונה: <b>${p.ans}</b>.<br>${p.exp}</div>`;
+    fb('❌ טעות — אבל למדת!', false);
+  }
+  setTimeout(() => { state.symRound++; renderSym(); }, 2900);
+};
+
+/* ══════════════ GAME 3 – EVOLUTION ══════════════ */
+function initEvo() {
+  state.evoGen      = 0;
+  state.evoFitness  = 50;
+  state.evoTraits   = ['גוף בינוני', 'פעילות יומית', 'צבע חום'];
+  state.evoSelected = new Set();
+  state.scores[3]   = 0;
+  const sc = document.getElementById('sc3');
+  if (sc) sc.textContent = 0;
+  renderEvo();
+}
+
+function renderEvo() {
+  if (state.evoGen >= EVOLUTION.length) { completeGame(3, 60); return; }
+  const sc        = EVOLUTION[state.evoGen];
+  const goodCount = sc.choices.filter(c => c.v > 0).length;
+  state.evoSelected = new Set();
+
+  document.getElementById('gc3').innerHTML = `
+    <div class="instr">
+      <b>🎯 המשימה:</b> בחר את <b>כל</b> המוטציות המועילות ולחץ "בדוק". יש יותר מאחת!
+    </div>
+    <div class="panel">
+      <div class="species-box">
+        <span class="sp-big">🦎</span>
+        <div class="gen-badge">🧬 דור ${state.evoGen + 1} מתוך ${EVOLUTION.length}</div>
+        <div style="margin:8px 0;font-size:.9rem;opacity:.8">כשירות: <b style="color:var(--gold)">${state.evoFitness}</b></div>
+        <div class="trait-list">${state.evoTraits.map(t => `<span class="ttag">✓ ${t}</span>`).join('')}</div>
+      </div>
+      <div class="pressure">
+        <span class="p-ico">${sc.pressure.ico}</span>
+        <b style="color:var(--danger);font-size:1.05rem">⚡ לחץ סביבתי: ${sc.pressure.t}</b>
+        <p style="font-size:.88rem;margin-top:6px;opacity:.9">${sc.pressure.d}</p>
+      </div>
+      <div style="text-align:center;margin:12px 0">
+        <span style="background:rgba(17,138,178,.2);border:1px solid var(--sky);border-radius:20px;padding:5px 16px;font-size:.88rem;color:var(--sky)">
+          💡 ישנן <b>${goodCount}</b> מוטציות מועילות — סמן את כולן!
+        </span>
+      </div>
+      <div class="adapt-grid">
+        ${sc.choices.map((c, i) => `
+          <div class="acard" id="ac${i}" onclick="G.toggleAdapt(${i})">
+            <span class="a-emoji">${c.e}</span>
+            <div class="a-type">${c.type}</div>
+            <div class="a-name">${c.n}</div>
+          </div>`).join('')}
+      </div>
+      <div style="text-align:center;margin-top:18px">
+        <button class="btn" onclick="G.checkAdapts()">🔬 בדוק בחירות</button>
+      </div>
+    </div>`;
+}
+
+G.toggleAdapt = function (i) {
+  const el = document.getElementById('ac' + i);
+  if (!el || el.style.pointerEvents === 'none') return;
+  if (state.evoSelected.has(i)) {
+    state.evoSelected.delete(i);
+    el.classList.remove('sel');
+  } else {
+    state.evoSelected.add(i);
+    el.classList.add('sel');
+  }
+};
+
+G.checkAdapts = function () {
+  const sc = EVOLUTION[state.evoGen];
+  document.querySelectorAll('.acard').forEach(c => c.style.pointerEvents = 'none');
+
+  let totalPts = 0;
+  let rows = '';
+
+  sc.choices.forEach((ch, i) => {
+    const el       = document.getElementById('ac' + i);
+    const selected = state.evoSelected.has(i);
+    const good     = ch.v > 0;
+
+    if (selected && good) {
+      totalPts += ch.v;
+      if (el) { el.style.borderColor = 'var(--success)'; el.style.background = 'rgba(6,214,160,.18)'; }
+      rows += `<li style="margin:6px 0">✅ <b>${ch.n}</b> (${ch.type}) — ${ch.why}</li>`;
+    } else if (selected && !good) {
+      totalPts += ch.v;
+      if (el) { el.style.borderColor = 'var(--danger)'; el.style.background = 'rgba(230,57,70,.15)'; }
+      rows += `<li style="margin:6px 0">❌ <b>${ch.n}</b> — ${ch.why}</li>`;
+    } else if (!selected && good) {
+      if (el) { el.style.borderColor = 'var(--warn)'; el.style.opacity = '.6'; }
+      rows += `<li style="margin:6px 0">⚠️ <b>${ch.n}</b> — פספסת! ${ch.why}</li>`;
+    }
+  });
+
+  // Update traits for correctly chosen good adaptations
+  sc.choices.forEach((ch, i) => {
+    if (state.evoSelected.has(i) && ch.v > 0) {
+      state.evoTraits.push(ch.n);
+      if (state.evoTraits.length > 5) state.evoTraits.shift();
+    }
+  });
+
+  state.evoFitness = Math.max(0, Math.min(100, state.evoFitness + totalPts));
+  if (totalPts > 0) addPts(3, totalPts);
+
+  const { ov } = openPopup(`
+    <h3>🧬 תוצאות דור ${state.evoGen + 1}</h3>
+    <ul style="list-style:none;padding:0">${rows}</ul>
+    <p style="margin-top:14px;font-size:1.05rem;color:${totalPts >= 0 ? 'var(--success)' : 'var(--danger)'}">
+      ${totalPts >= 0 ? '+' : ''}${totalPts} כשירות → נוכחית: <b>${state.evoFitness}</b>
+    </p>
+    <button class="btn" style="margin-top:16px;width:100%"
+            onclick="closePopups();G.nextEvo()">
+      ${state.evoGen + 1 < EVOLUTION.length ? '→ הדור הבא' : '🏆 סיום'}
+    </button>`);
+  ov.onclick = null;
+};
+
+G.nextEvo = function () { state.evoGen++; state.evoSelected = new Set(); renderEvo(); };
+
+/* ══════════════ GAME 4 – ECOSYSTEM ══════════════ */
+function initEco() {
+  state.ecoRound  = 0;
+  state.scores[4] = 0;
+  const sc = document.getElementById('sc4');
+  if (sc) sc.textContent = 0;
+  renderEco();
+}
+
+function renderEco() {
+  if (state.ecoRound >= ECOSYSTEM.length) { completeGame(4, 60); return; }
+  const sc       = ECOSYSTEM[state.ecoRound];
+  const shuffled = sc.opts.map((o, oi) => ({ ...o, oi })).sort(() => Math.random() - 0.5);
+  document.getElementById('gc4').innerHTML = `
+    <div class="instr"><b>🎯 המשימה:</b> ניתוח מדעי — קרה שינוי במערכת. מה תהיה ההשפעה?</div>
+    <div class="panel">
+      <div class="env-box">
+        <div style="font-size:2.5rem;margin-bottom:10px">${sc.ico}</div>
+        <div style="font-size:.85rem;color:var(--text2);margin-bottom:10px">${sc.setup}</div>
+        <div class="env-title" style="font-size:1rem">❓ ${sc.q}</div>
+      </div>
+      <p style="text-align:center;opacity:.8;margin:14px 0;font-size:.9rem">בחר את ההשפעה הנכונה:</p>
+      <div class="eco-choices">
+        ${shuffled.map(o => `<div class="eco-choice" onclick="G.checkEco(${o.oi})">${o.t}</div>`).join('')}
+      </div>
+      <div style="text-align:center;font-size:.82rem;opacity:.6;margin-top:12px">
+        תרחיש ${state.ecoRound + 1} מתוך ${ECOSYSTEM.length}
+      </div>
+    </div>`;
+}
+
+G.checkEco = function (oi) {
+  const sc  = ECOSYSTEM[state.ecoRound];
+  const opt = sc.opts[oi];
+  document.querySelectorAll('.eco-choice').forEach(e => { e.style.pointerEvents = 'none'; e.style.opacity = '.5'; });
+  if (opt.ok) {
+    addPts(4, 25);
+    openPopup(`
+      <h3 style="color:var(--success)">✅ ניתוח נכון!</h3>
+      <p>${opt.exp}</p>
+      <p style="margin-top:12px;font-size:.85rem;color:var(--g4)">
+        💡 שיווי משקל דינמי: כל שינוי בחוליה אחת מדורגת לכל השרשרת!
+      </p>
+      <button class="btn" style="margin-top:16px;width:100%"
+              onclick="closePopups();G.nextEco()">
+        ${state.ecoRound + 1 < ECOSYSTEM.length ? '→ תרחיש הבא' : '🏆 סיום'}
+      </button>`);
+  } else {
+    openPopup(`
+      <h3 style="color:var(--danger)">❌ לא מדויק</h3>
+      <p>${opt.exp}</p>
+      <p style="margin-top:10px;font-size:.85rem;opacity:.85">
+        התשובה הנכונה: <b>${sc.opts.find(o => o.ok).t}</b>
+      </p>
+      <button class="btn btn-outline" style="margin-top:16px;width:100%"
+              onclick="closePopups();G.nextEco()">
+        ${state.ecoRound + 1 < ECOSYSTEM.length ? '→ תרחיש הבא' : '🏆 סיום'}
+      </button>`);
+  }
+};
+
+G.nextEco = function () { state.ecoRound++; renderEco(); };
+
+/* ══════════════ ENCYCLOPEDIA ══════════════ */
+function buildEnc() {
+  const c = document.getElementById('enc-content');
+  if (!c) return;
+  c.innerHTML = CONCEPTS.map((con, i) => `
+    <div class="enc-entry" id="ee${i}" onclick="G.togEnc(${i})">
+      <h4>📖 ${con.name}</h4>
+      <p>${con.def}</p>
+    </div>`).join('');
+}
+
+G.toggleEnc = function () {
+  state.encOpen = !state.encOpen;
+  document.getElementById('enc-panel').classList.toggle('open', state.encOpen);
+};
+
+G.togEnc = function (i) {
+  const el = document.getElementById('ee' + i);
+  if (el) el.classList.toggle('exp');
+};
+
+/* ══════════════ PARTICLES ══════════════ */
+function initParticles() {
+  const c  = document.getElementById('particles');
+  if (!c) return;
+  const ps = ['🌿', '🍃', '🌱', '🌺', '🦋', '🌾', '✨', '🍀', '🌸'];
+  for (let i = 0; i < 20; i++) {
+    const p = document.createElement('div');
+    p.className = 'ptcl';
+    p.textContent = ps[Math.floor(Math.random() * ps.length)];
+    p.style.left              = Math.random() * 100 + '%';
+    p.style.fontSize          = (0.7 + Math.random() * 0.9) + 'rem';
+    p.style.animationDuration = (9 + Math.random() * 14) + 's';
+    p.style.animationDelay    = (-Math.random() * 20) + 's';
+    c.appendChild(p);
+  }
+}
+
+/* ══════════════ INIT ══════════════ */
+buildMap();
+buildEnc();
+initParticles();
+</script>
+</body>
+</html>
