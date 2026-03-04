@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ברירת הטבע 🧬</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0d1117; color: #e6edf3;
+      min-height: 100vh; display: flex; flex-direction: column;
+      align-items: center; padding: 16px 12px;
+    }
+    .screen { display: none; width: 100%; max-width: 440px; flex-direction: column; align-items: center; }
+    .screen.active { display: flex; }
+
+    /* ── Welcome ── */
+    .hero { font-size: 4rem; text-align: center; margin: 20px 0 8px; animation: bob 2s ease-in-out infinite; }
+    @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+    .title  { font-size: 2rem; font-weight: 900; color: #f9c74f; text-align: center; margin-bottom: 4px; }
+    .subtitle { font-size: 0.88rem; color: #8b949e; text-align: center; margin-bottom: 20px; line-height: 1.5; }
+    .how-box {
+      width: 100%; background: #161b22; border-radius: 14px;
+      padding: 14px 16px; margin-bottom: 20px; font-size: 0.88rem;
+      color: #c9d1d9; line-height: 1.8;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      width: 100%; padding: 15px; border: none; border-radius: 14px;
+      color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: transform .15s; margin-bottom: 10px;
+    }
+    .btn:active { transform: scale(.96); }
+    .btn-green  { background: linear-gradient(135deg,#238636,#3fb950); }
+    .btn-blue   { background: linear-gradient(135deg,#1971c2,#4cc9f0); }
+    .btn-subtle { background: none; border: 1px solid #30363d; color: #8b949e; }
+    .link-back  { color: #8b949e; font-size: .83rem; text-decoration: none; margin-top: 6px; }
+
+    /* ── Header ── */
+    .gen-header {
+      width: 100%; background: #161b22; border-radius: 12px;
+      padding: 10px 14px; margin-bottom: 14px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .gen-label { font-size: .78rem; color: #8b949e; }
+    .gen-val   { font-size: 1rem; font-weight: 800; }
+    .gen-dots  { display: flex; gap: 5px; }
+    .dot { width: 11px; height: 11px; border-radius: 50%; background: #30363d; }
+    .dot.done    { background: #3fb950; }
+    .dot.current { background: #f78166; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+
+    /* ── Phase label ── */
+    .phase-lbl {
+      font-size: .73rem; color: #8b949e; letter-spacing: 1px;
+      text-transform: uppercase; text-align: center; margin-bottom: 10px;
+    }
+
+    /* ── Env card ── */
+    .env-card {
+      width: 100%; border-radius: 18px; padding: 20px 18px;
+      text-align: center; margin-bottom: 16px; border: 1px solid #30363d;
+    }
+    .env-emoji { font-size: 3.2rem; margin-bottom: 6px; }
+    .env-name  { font-size: 1.3rem; font-weight: 800; color: #f9c74f; margin-bottom: 4px; }
+    .env-desc  { font-size: .82rem; color: #8b949e; line-height: 1.5; }
+
+    /* ── Card stack ── */
+    .card-stack { position: relative; width: 100%; height: 285px; margin-bottom: 12px; }
+    .creature-card {
+      position: absolute; width: 100%; top: 0; left: 0;
+      background: #161b22; border: 2px solid #30363d; border-radius: 22px;
+      padding: 22px 18px; text-align: center;
+      cursor: grab; user-select: none;
+      transition: transform .14s, box-shadow .14s;
+    }
+    .creature-card.dragging { cursor: grabbing; transition: none; }
+    .creature-card.fly-r { animation: flyR .38s forwards; }
+    .creature-card.fly-l { animation: flyL .38s forwards; }
+    @keyframes flyR { to { transform: translateX(130%) rotate(22deg); opacity: 0; } }
+    @keyframes flyL { to { transform: translateX(-130%) rotate(-22deg); opacity: 0; } }
+
+    .swipe-hint {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      font-size: 2.6rem; font-weight: 900; opacity: 0;
+      transition: opacity .15s; pointer-events: none;
+    }
+    .hint-l { left: 14px; color: #f85149; }
+    .hint-r { right: 14px; color: #3fb950; }
+
+    .c-emoji { font-size: 3.6rem; display: block; margin-bottom: 8px; }
+    .c-name  { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+    .trait-tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+    .tag {
+      background: #21262d; border: 1px solid #30363d;
+      border-radius: 20px; padding: 4px 10px;
+      font-size: .76rem; color: #c9d1d9;
+    }
+
+    /* ── Swipe buttons ── */
+    .swipe-row { display: flex; gap: 20px; width: 100%; margin-bottom: 12px; }
+    .swipe-col { flex: 1; text-align: center; }
+    .swipe-btn {
+      width: 100%; padding: 14px; border: none; border-radius: 14px;
+      font-size: 1.7rem; cursor: pointer; transition: transform .13s;
+    }
+    .swipe-btn:active { transform: scale(.91); }
+    .btn-no  { background: rgba(248,81,73,.13);  border: 2px solid #f85149; }
+    .btn-yes { background: rgba(63,185,80,.13);   border: 2px solid #3fb950; }
+    .swipe-lbl { font-size: .74rem; color: #8b949e; margin-top: 3px; }
+
+    /* ── Feedback ── */
+    .feedback {
+      width: 100%; border-radius: 14px; padding: 13px 15px;
+      margin-bottom: 12px; font-size: .84rem; line-height: 1.55; display: none;
+    }
+    .fb-ok  { background: rgba(63,185,80,.12);  border: 1px solid #3fb950; color: #56d364; }
+    .fb-err { background: rgba(248,81,73,.12);  border: 1px solid #f85149; color: #ff7b72; }
+    .badge  { display: inline-block; background: rgba(255,255,255,.1); border-radius: 6px; padding: 1px 7px; font-size: .72rem; margin-bottom: 5px; }
+
+    /* ── Mutation phase ── */
+    .mut-title { font-size: 1.1rem; font-weight: 700; color: #f9c74f; text-align: center; margin-bottom: 4px; }
+    .mut-sub   { font-size: .82rem; color: #8b949e; text-align: center; margin-bottom: 14px; line-height: 1.5; }
+    .mut-list  { width: 100%; display: flex; flex-direction: column; gap: 9px; margin-bottom: 16px; }
+    .mut-card {
+      background: #161b22; border: 2px solid #30363d; border-radius: 14px;
+      padding: 13px 14px; cursor: pointer;
+      display: flex; align-items: center; gap: 11px;
+      transition: border-color .18s, background .18s;
+    }
+    .mut-card:hover   { border-color: #58a6ff; background: #1c2128; }
+    .mut-card.picked  { border-color: #3fb950; background: rgba(63,185,80,.09); }
+    .me { font-size: 1.9rem; }
+    .mt { flex: 1; }
+    .mn { font-size: .93rem; font-weight: 700; }
+    .md { font-size: .76rem; color: #8b949e; margin-top: 2px; }
+    .mc { font-size: .71rem; color: #58a6ff; margin-top: 3px; }
+
+    /* ── Graph ── */
+    .graph-box {
+      width: 100%; background: #161b22; border-radius: 14px;
+      padding: 14px; margin-bottom: 14px;
+    }
+    .graph-title { font-size: .85rem; color: #8b949e; text-align: center; margin-bottom: 10px; }
+    canvas { display: block; border-radius: 6px; }
+    .leg { display: flex; justify-content: center; gap: 16px; margin-top: 8px; font-size: .74rem; color: #8b949e; }
+    .ld  { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-left: 4px; }
+    .info-box {
+      width: 100%; background: #1c2128; border: 1px solid #58a6ff;
+      border-radius: 12px; padding: 13px 15px; margin-bottom: 14px;
+      font-size: .84rem; color: #c9d1d9; line-height: 1.6;
+    }
+
+    /* ── Win ── */
+    .win-hero  { font-size: 5rem; text-align: center; margin: 10px 0 6px; animation: bob 2s infinite; }
+    .win-title { font-size: 1.7rem; font-weight: 900; color: #f9c74f; text-align: center; margin-bottom: 4px; }
+    .win-sub   { font-size: .87rem; color: #8b949e; text-align: center; margin-bottom: 14px; }
+    .stars     { font-size: 2rem; text-align: center; margin-bottom: 14px; }
+    .concepts-box { width: 100%; background: #161b22; border-radius: 14px; padding: 14px; margin-bottom: 16px; }
+    .concepts-ttl { font-size: .95rem; font-weight: 700; margin-bottom: 10px; }
+    .ci { display: flex; align-items: flex-start; gap: 9px; padding: 8px 0; border-bottom: 1px solid #21262d; }
+    .ci:last-child { border-bottom: none; }
+    .ci-ic  { font-size: 1.3rem; margin-top: 1px; }
+    .ci-nm  { font-size: .88rem; font-weight: 700; color: #79c0ff; }
+    .ci-df  { font-size: .76rem; color: #8b949e; margin-top: 2px; line-height: 1.4; }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════ WELCOME ═══════════════════════════════════ -->
+<div id="s-welcome" class="screen active">
+  <div class="hero">🧬</div>
+  <div class="title">ברירת הטבע</div>
+  <div class="subtitle">הנחה מין להתפתח דרך 5 דורות<br>קבל החלטות · גלה מושגי אבולוציה תוך כדי משחק</div>
+
+  <div class="how-box">
+    🃏 <strong>סינון</strong> — החלט מי שורד את הסביבה<br>
+    🧬 <strong>מוטציה</strong> — בחר תכונה חדשה לדור הבא<br>
+    📈 <strong>גרף</strong> — ראה איך האוכלוסייה משתנה<br>
+    <br><span style="color:#8b949e;font-size:.82rem">5 דורות · גרור כרטיס ימינה/שמאלה · מושגי אבולוציה נחשפים תוך כדי</span>
+  </div>
+
+  <button class="btn btn-green" onclick="startGame()">🌿 התחל מסע האבולוציה</button>
+  <a class="link-back" href="menu.html">↩ חזור לתפריט</a>
+</div>
+
+<!-- ═══════════════════════════════════ GAME ═══════════════════════════════════ -->
+<div id="s-game" class="screen">
+  <div class="gen-header">
+    <div><div class="gen-label">דור</div><div class="gen-val" id="gen-num">1 / 5</div></div>
+    <div class="gen-dots" id="gen-dots"></div>
+    <div style="text-align:left"><div class="gen-label">ניקוד</div><div class="gen-val" style="color:#f9c74f" id="score-disp">0</div></div>
+  </div>
+  <div id="game-content" style="width:100%"></div>
+</div>
+
+<!-- ═══════════════════════════════════ WIN ═══════════════════════════════════ -->
+<div id="s-win" class="screen">
+  <div class="win-hero" id="w-emoji">🦎</div>
+  <div class="win-title" id="w-title">המין שלך שרד!</div>
+  <div class="win-sub"   id="w-sub">5 דורות של ברירה טבעית</div>
+  <div class="stars"     id="w-stars">⭐⭐⭐</div>
+  <canvas id="final-graph" style="width:100%;max-width:440px;border-radius:12px;margin-bottom:14px"></canvas>
+  <div class="concepts-box">
+    <div class="concepts-ttl">🎓 מושגים שגילית תוך כדי המשחק</div>
+    <div id="concepts-list"></div>
+  </div>
+  <button class="btn btn-green" onclick="startGame()">🔄 שחק שוב</button>
+  <a class="link-back" href="menu.html" style="display:block;text-align:center;margin-top:6px">↩ תפריט ראשי</a>
+</div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// DATA
+// ─────────────────────────────────────────────────────────────
+
+const CREATURES = [
+  {emoji:'🦎', name:'לטאה'}, {emoji:'🐭', name:'עכבר'},
+  {emoji:'🐦', name:'ציפור'}, {emoji:'🦋', name:'פרפר'},
+  {emoji:'🐸', name:'צפרדע'}, {emoji:'🦔', name:'קיפוד'},
+];
+
+const TRAIT_COLOR    = [{name:'צבע חום',key:'brown',e:'🟤'},{name:'צבע ירוק',key:'green',e:'🟢'},{name:'צבע כהה',key:'black',e:'⚫'},{name:'צבע בהיר',key:'white',e:'⚪'},{name:'פסים כתומים',key:'orange',e:'🟠'}];
+const TRAIT_SIZE     = [{name:'גוף קטן',key:'small',e:'🤏'},{name:'גוף בינוני',key:'medium',e:'✋'},{name:'גוף גדול',key:'large',e:'🖐️'}];
+const TRAIT_ACTIVITY = [{name:'פעיל ביום',key:'day',e:'☀️'},{name:'פעיל בלילה',key:'night',e:'🌙'}];
+const TRAIT_SPECIAL  = [
+  {name:'שכבת שומן עבה',key:'fat',e:'🧈'},{name:'ריצה מהירה',key:'fast',e:'💨'},
+  {name:'צריכת מים מועטה',key:'lowwater',e:'💧'},{name:'שמיעה חדה',key:'hearing',e:'👂'},
+  {name:'עור עבה',key:'thickskin',e:'🛡️'},{name:'שחייה מצוינת',key:'swim',e:'🏊'},
+  {name:'טיפוס מהיר',key:'climb',e:'🧗'},{name:'הסוואה מצוינת',key:'camo',e:'👁️‍🗨️'},
+  {name:'ריח חזק',key:'smell',e:'👃'},{name:'קיפאון חורף',key:'hibernate',e:'🛌'},
+  {name:'עיניים גדולות',key:'eyes',e:'👁️'},{name:'שיניים חדות',key:'teeth',e:'🦷'},
+];
+
+const ENVS = [
+  { id:'desert', name:'מדבר יבש ☀️', emoji:'🏜️', bg:'linear-gradient(135deg,#3d1f00,#21262d)',
+    desc:'חום קיצוני · מים נדירים · חול ואבנים',
+    good:['brown','small','night','lowwater','thickskin','fat'],
+    bad:['white','large','day','swim'],
+    concept:'ברירה טבעית', ckey:'naturalsel',
+    explain:'הסביבה "בוחרת" מי שורד. יצורים עם עור עבה וצריכת מים מועטה — <strong>כשירות גבוהה יותר</strong> ביובש. אלה מתרבים ומעבירים את תכונותיהם.' },
+  { id:'forest', name:'יער ירוק 🌲', emoji:'🌲', bg:'linear-gradient(135deg,#0d2a16,#21262d)',
+    desc:'צל ועצים · טורפים · מזון שפע',
+    good:['green','medium','day','climb','camo','smell'],
+    bad:['orange','large','lowwater'],
+    concept:'התאמה מורפולוגית', ckey:'morphadapt',
+    explain:'<strong>התאמה מורפולוגית</strong> = שינוי בצורת הגוף. צבע ירוק מסתיר בין העלים, יכולת טיפוס מאפשרת מחסה. אלו תכונות שהסביבה "בוחרת לשמר".' },
+  { id:'flood', name:'שיטפון 🌊', emoji:'🌊', bg:'linear-gradient(135deg,#001a2d,#21262d)',
+    desc:'גשמים עזים · נהרות · קרקע מוצפת',
+    good:['large','swim','medium','black','day'],
+    bad:['small','lowwater','fat','hibernate'],
+    concept:'כשירות', ckey:'fitness',
+    explain:'<strong>כשירות (fitness)</strong> = לא "חזק" — אלא <em>מתאים לסביבה</em>. עכבר קטן בשיטפון — כשירות נמוכה. צב שוחה — כשירות גבוהה. הכל תלוי בסביבה.' },
+  { id:'predator', name:'פלישת טורפים 🦁', emoji:'🦁', bg:'linear-gradient(135deg,#2a0a00,#21262d)',
+    desc:'אריות ונשרים חדשו לאזור · ציד פעיל',
+    good:['fast','small','camo','night','hearing','brown'],
+    bad:['large','day','orange'],
+    concept:'שונות', ckey:'variation',
+    explain:'<strong>שונות</strong> = הבדלים בין פרטים בני אותו מין. ככל שיש יותר שונות, יש סיכוי שלפחות אחד ישרוד שינוי פתאומי. שונות היא חומר הגלם של האבולוציה.' },
+  { id:'spring', name:'אביב שגשוג 🌸', emoji:'🌸', bg:'linear-gradient(135deg,#1a2d0a,#21262d)',
+    desc:'שנה טובה · מזון שפע · ריבוי מינים',
+    good:['medium','day','teeth','smell','fast','green'],
+    bad:['hibernate','thickskin'],
+    concept:'מגוון ביולוגי', ckey:'biodiversity',
+    explain:'<strong>מגוון ביולוגי</strong> = מגוון מינים ותכונות. שנת שגשוג מאפשרת לתכונות שונות לשרוד יחד — לכן המגוון עולה בתקופות טובות. מגוון גבוה = מערכת יציבה יותר.' },
+];
+
+const MUTATIONS = [
+  {e:'🎨',name:'הסוואה משופרת',   detail:'צבע גוף שמשתנה לפי סביבה',   concept:'התאמה מורפולוגית', ckey:'morphadapt'},
+  {e:'💧',name:'חיסכון במים',      detail:'כליות יעילות — שורד ביובש',  concept:'התאמה פיסיולוגית', ckey:'physadapt'},
+  {e:'🧠',name:'זיכרון מרחבי',    detail:'זוכר מסלולי בריחה ומזון',    concept:'התאמה התנהגותית',  ckey:'behavadapt'},
+  {e:'🏃',name:'שרירים מהירים',   detail:'בורח מטורפים מהר יותר',      concept:'ברירה טבעית',       ckey:'naturalsel'},
+  {e:'🌡️',name:'ויסות חום',       detail:'שומר על חום גוף קבוע',       concept:'הומאותרמיה',        ckey:'homeotherm'},
+  {e:'🐣',name:'ריבוי מהיר',      detail:'יותר צאצאים = יותר סיכוי',   concept:'כשירות',            ckey:'fitness'},
+  {e:'🌿',name:'עיכול יעיל',      detail:'מנצל יותר אנרגיה מהמזון',   concept:'זרימת אנרגיה',      ckey:'energy'},
+  {e:'🏊',name:'גפיים שחייה',     detail:'מסתגל לסביבות מוצפות',       concept:'התאמה מורפולוגית',  ckey:'morphadapt'},
+  {e:'☀️',name:'ניצול פוטוסינתזה', detail:'אוכל צמחים שמנצלים פוטוסינתזה — פחות תחרות על מזון', concept:'פוטוסינתזה ונשימה', ckey:'photo'},
+  {e:'🫁',name:'ריאות גדולות',    detail:'נשימה יעילה יותר = יותר אנרגיה לפעילות', concept:'נשימה תאית', ckey:'respiration'},
+  {e:'👁️',name:'ראיית לילה',     detail:'פעילות לילית — פחות טורפים', concept:'התאמה התנהגותית',   ckey:'behavadapt'},
+  {e:'🦴',name:'עצמות חזקות',    detail:'שורד טוב יותר בסביבות קשות', concept:'התאמה פיסיולוגית',  ckey:'physadapt'},
+];
+
+const GLOSSARY = {
+  naturalsel:  {name:'ברירה טבעית',         e:'🌿', def:'תהליך שבו יצורים עם תכונות המותאמות לסביבה שורדים ומתרבים יותר. הסביבה "בוחרת" — בלי כוונה, רק כי המותאמים מצליחים להשאיר צאצאים.'},
+  fitness:     {name:'כשירות',               e:'💪', def:'יכולת לשרוד ולהתרבות בסביבה נתונה. לא "חזק" אלא "מתאים". כשירות גבוהה = יותר צאצאים שנושאים את אותן תכונות.'},
+  variation:   {name:'שונות',                e:'🌈', def:'הבדלים בין פרטים בני אותו מין. נובעת ממוטציות ושחלוף גנטי. שונות היא חומר הגלם שעליו פועלת הברירה הטבעית.'},
+  morphadapt:  {name:'התאמה מורפולוגית',     e:'🦴', def:'שינויים בצורת הגוף: צבע הסוואה, עובי העור, צורת מקור. נוצרות לאט על פני דורות רבים.'},
+  physadapt:   {name:'התאמה פיסיולוגית',    e:'⚗️', def:'שינויים בתהליכים הפנימיים: יעילות כליות, ויסות חום, עמידות לרעלים.'},
+  behavadapt:  {name:'התאמה התנהגותית',     e:'🧠', def:'שינויים בהתנהגות: פעילות לילית, הגירה עונתית, בחירת בית גידול מוגן.'},
+  biodiversity:{name:'מגוון ביולוגי',        e:'🦋', def:'מגוון מינים, גנים וסביבות. מגוון גבוה = מערכת יציבה יותר, מסוגלת להתמודד עם שינויים ומחלות.'},
+  homeotherm:  {name:'הומאותרמיה',           e:'🌡️', def:'שמירה על טמפרטורת גוף קבועה ללא תלות בסביבה. מאפיין יונקים וציפורים — מאפשר פעילות גם בקור.'},
+  energy:      {name:'זרימת אנרגיה',         e:'⚡', def:'אנרגיה עוברת בשרשרת המזון. כ-90% אובדת בכל רמה — לכן יש פחות אריות מצבאים, ופחות צבאים מעשב.'},
+  photo:       {name:'פוטוסינתזה',            e:'🌱', def:'תהליך שבו צמחים הופכים אנרגיית שמש + CO₂ + מים לסוכר + חמצן. הבסיס לכל שרשרות המזון.'},
+  respiration: {name:'נשימה תאית',           e:'🫁', def:'תהליך שבו תאים מפרקים סוכר בנוכחות חמצן כדי לשחרר אנרגיה (ATP). ההפך מפוטוסינתזה — מתרחש בכל תא חי.'},
+};
+
+// ─────────────────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────────────────
+let G = {};   // game state
+let dragX = 0, dragStartX = 0, isDrag = false;
+
+function startGame() {
+  const envs = shuffle([...ENVS]);
+  G = {
+    gen: 0, score: 0,
+    pop: [100], div: [30],
+    creature: CREATURES[rnd(CREATURES.length)],
+    envs, env: null,
+    cards: [], ci: 0, correct: 0,
+    mutations: [],
+    seen: new Set(),
+    mutOpts: [], mutSel: null,
+  };
+  show('s-game');
+  nextGen();
+}
+
+// ─────────────────────────────────────────────────────────────
+// GENERATION FLOW
+// ─────────────────────────────────────────────────────────────
+function nextGen() {
+  if (G.gen >= 5) { showWin(); return; }
+  G.gen++;
+  G.env = G.envs[G.gen - 1];
+  G.correct = 0;
+  updateHeader();
+  renderEnvIntro();
+}
+
+function updateHeader() {
+  document.getElementById('gen-num').textContent = G.gen + ' / 5';
+  document.getElementById('score-disp').textContent = G.score;
+  const dots = document.getElementById('gen-dots');
+  dots.innerHTML = '';
+  for (let i = 1; i <= 5; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < G.gen ? ' done' : i === G.gen ? ' current' : '');
+    dots.appendChild(d);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENV INTRO
+// ─────────────────────────────────────────────────────────────
+function renderEnvIntro() {
+  const env = G.env;
+  setContent(`
+    <div class="phase-lbl">דור ${G.gen} · סביבה חדשה</div>
+    <div class="env-card" style="background:${env.bg}">
+      <div class="env-emoji">${env.emoji}</div>
+      <div class="env-name">${env.name}</div>
+      <div class="env-desc">${env.desc}</div>
+    </div>
+    <div class="how-box" style="margin-bottom:16px">
+      👀 <strong>המשימה:</strong> החלט מי מה${G.creature.name}ים שורד בסביבה הזו<br>
+      <span style="color:#8b949e;font-size:.8rem">גרור כרטיס ימינה = שורד ✅ · שמאלה = נכחד ❌</span>
+    </div>
+    <button class="btn btn-green" onclick="startSwipe()">▶ התחל סינון</button>
+  `);
+}
+
+// ─────────────────────────────────────────────────────────────
+// SWIPE PHASE
+// ─────────────────────────────────────────────────────────────
+function makeCards() {
+  const env = G.env;
+  return [0,1,2,3].map(i => {
+    const color    = TRAIT_COLOR[rnd(TRAIT_COLOR.length)];
+    const size     = TRAIT_SIZE[rnd(TRAIT_SIZE.length)];
+    const activity = TRAIT_ACTIVITY[rnd(TRAIT_ACTIVITY.length)];
+    const special  = TRAIT_SPECIAL[rnd(TRAIT_SPECIAL.length)];
+    const traits   = [color, size, activity, special];
+    const keys     = traits.map(t => t.key);
+    let score = 0;
+    keys.forEach(k => { if (env.good.includes(k)) score += 2; if (env.bad.includes(k)) score -= 2; });
+    return {
+      traits,
+      survives: score >= 0,
+      goodT: traits.filter(t => env.good.includes(t.key)),
+      badT:  traits.filter(t => env.bad.includes(t.key)),
+    };
+  });
+}
+
+function startSwipe() {
+  G.cards = makeCards();
+  G.ci = 0;
+  renderCard();
+}
+
+function renderCard() {
+  if (G.ci >= G.cards.length) { startMutation(); return; }
+  const card = G.cards[G.ci];
+  const env  = G.env;
+
+  setContent(`
+    <div class="phase-lbl">דור ${G.gen} · סינון פרטים — ${G.ci + 1} מתוך 4</div>
+    <div class="env-card" style="background:${env.bg};padding:10px 14px;margin-bottom:10px">
+      <span style="font-size:.78rem;color:#8b949e">סביבה: </span>
+      <span style="font-weight:700;color:#f9c74f">${env.emoji} ${env.name}</span>
+    </div>
+    <div class="card-stack" id="cstack">
+      <div class="swipe-hint hint-l" id="hl">❌</div>
+      <div class="swipe-hint hint-r" id="hr">✅</div>
+      <div class="creature-card" id="ccard">
+        <span class="c-emoji">${G.creature.emoji}</span>
+        <div class="c-name">${G.creature.name} — פרט ${G.ci + 1}</div>
+        <div class="trait-tags">
+          ${card.traits.map(t => `<span class="tag">${t.e} ${t.name}</span>`).join('')}
+        </div>
+        <div style="font-size:.72rem;color:#8b949e;margin-top:10px">גרור ימינה לשרוד · שמאלה לנכחד</div>
+      </div>
+    </div>
+    <div class="swipe-row">
+      <div class="swipe-col"><button class="swipe-btn btn-no"  onclick="doSwipe(false)">❌</button><div class="swipe-lbl">נכחד</div></div>
+      <div class="swipe-col"><button class="swipe-btn btn-yes" onclick="doSwipe(true)">✅</button><div class="swipe-lbl">שורד</div></div>
+    </div>
+    <div id="fb" class="feedback"></div>
+  `);
+  attachDrag();
+}
+
+function attachDrag() {
+  const el = document.getElementById('ccard');
+  if (!el) return;
+  dragX = 0; isDrag = false;
+
+  el.addEventListener('touchstart',  e => { dragStartX = e.touches[0].clientX; isDrag = true; el.classList.add('dragging'); }, {passive:true});
+  el.addEventListener('touchmove',   e => { if (!isDrag) return; dragX = e.touches[0].clientX - dragStartX; movCard(el, dragX); }, {passive:true});
+  el.addEventListener('touchend',    ()=> { isDrag = false; el.classList.remove('dragging'); Math.abs(dragX)>70 ? doSwipe(dragX>0) : resetCard(el); dragX=0; });
+  el.addEventListener('mousedown',   e => { dragStartX = e.clientX; isDrag = true; el.classList.add('dragging'); document.addEventListener('mousemove', onMM); document.addEventListener('mouseup', onMU); });
+}
+function onMM(e) { if (!isDrag) return; const el=document.getElementById('ccard'); if (!el) return; dragX=e.clientX-dragStartX; movCard(el,dragX); }
+function onMU()  { const el=document.getElementById('ccard'); isDrag=false; if(el) el.classList.remove('dragging'); document.removeEventListener('mousemove',onMM); document.removeEventListener('mouseup',onMU); if(Math.abs(dragX)>70) doSwipe(dragX>0); else resetCard(el); dragX=0; }
+
+function movCard(el, dx) {
+  el.style.transform = `translateX(${dx}px) rotate(${dx*.05}deg)`;
+  const hl = document.getElementById('hl'), hr = document.getElementById('hr');
+  if (hl) hl.style.opacity = dx < -25 ? Math.min(1, Math.abs(dx)/70) : 0;
+  if (hr) hr.style.opacity = dx >  25 ? Math.min(1, dx/70)           : 0;
+}
+function resetCard(el) {
+  if (el) el.style.transform = '';
+  ['hl','hr'].forEach(id => { const e=document.getElementById(id); if(e) e.style.opacity=0; });
+}
+
+function doSwipe(survived) {
+  const card = G.cards[G.ci];
+  const ok   = survived === card.survives;
+  if (ok) { G.score += 10; G.correct++; document.getElementById('score-disp').textContent = G.score; }
+
+  const cel = document.getElementById('ccard');
+  if (cel) cel.classList.add(survived ? 'fly-r' : 'fly-l');
+
+  const fb = document.getElementById('fb');
+  if (fb) {
+    fb.style.display = 'block';
+    fb.className = 'feedback ' + (ok ? 'fb-ok' : 'fb-err');
+    const survText = card.survives ? '<strong>שורד</strong>' : '<strong>נכחד</strong>';
+    let detail = '';
+    if (card.goodT.length) detail += `✅ מסייעות: ${card.goodT.map(t=>t.e+' '+t.name).join(', ')}<br>`;
+    if (card.badT.length)  detail += `❌ מזיקות: ${card.badT.map(t=>t.e+' '+t.name).join(', ')}<br>`;
+    fb.innerHTML = `<span class="badge">🌿 ${G.env.concept}</span><br>${ok?'✅ נכון!':'❌ לא בדיוק...'} פרט זה ${survText} כאן<br>${detail}<span style="font-size:.78rem;opacity:.85">${G.env.explain}</span>`;
+    G.seen.add(G.env.ckey);
+  }
+
+  const next = G.ci + 1;
+  setTimeout(() => { G.ci = next; renderCard(); }, 2100);
+}
+
+// ─────────────────────────────────────────────────────────────
+// MUTATION PHASE
+// ─────────────────────────────────────────────────────────────
+function startMutation() {
+  // Update population
+  const last = G.pop[G.pop.length - 1];
+  const delta = (G.correct - 2) * 9 + rnd(12) - 5;
+  G.pop.push(Math.max(15, Math.min(210, last + delta)));
+  const lastD = G.div[G.div.length - 1];
+  G.div.push(Math.max(10, Math.min(95, lastD + rnd(18) - 4)));
+
+  const opts = shuffle([...MUTATIONS]).slice(0, 3);
+  G.mutOpts = opts; G.mutSel = null;
+
+  setContent(`
+    <div class="phase-lbl">דור ${G.gen} · מוטציה</div>
+    <div class="mut-title">🧬 הניצולים מתרבים</div>
+    <div class="mut-sub">${G.correct}/4 פרטים שרדו · בחר תכונה חדשה לדור הבא<br>
+      <span style="color:#58a6ff;font-size:.79rem">זוהי שונות — גיוון עובר לדור הבא</span>
+    </div>
+    <div class="mut-list">
+      ${opts.map((m,i)=>`
+        <div class="mut-card" onclick="pickMut(${i},this)">
+          <div class="me">${m.e}</div>
+          <div class="mt">
+            <div class="mn">${m.name}</div>
+            <div class="md">${m.detail}</div>
+            <div class="mc">📚 ${m.concept}</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <button class="btn btn-blue" id="mut-btn" onclick="confirmMut()" style="display:none">✅ אשר ← ראה גרף</button>
+  `);
+}
+
+function pickMut(i, el) {
+  document.querySelectorAll('.mut-card').forEach(c => c.classList.remove('picked'));
+  el.classList.add('picked');
+  G.mutSel = i;
+  const b = document.getElementById('mut-btn');
+  if (b) b.style.display = 'block';
+  G.seen.add(G.mutOpts[i].ckey);
+  G.seen.add('variation');
+}
+function confirmMut() {
+  if (G.mutSel === null) return;
+  G.mutations.push(G.mutOpts[G.mutSel].name);
+  showGraph();
+}
+
+// ─────────────────────────────────────────────────────────────
+// GRAPH PHASE
+// ─────────────────────────────────────────────────────────────
+function showGraph() {
+  const popTrend = G.pop[G.pop.length-1] > G.pop[G.pop.length-2] ? 'גדלה' : 'קטנה';
+  setContent(`
+    <div class="phase-lbl">דור ${G.gen} · גרף אוכלוסייה</div>
+    <div class="mut-title">📈 האוכלוסייה משתנה</div>
+    <div class="mut-sub" style="margin-bottom:12px">כך השתנו גודל האוכלוסייה והמגוון הגנטי</div>
+    <div class="graph-box">
+      <div class="graph-title">שינוי לאורך הדורות</div>
+      <canvas id="g-canvas" height="150"></canvas>
+      <div class="leg"><span><span class="ld" style="background:#3fb950"></span>אוכלוסייה</span><span><span class="ld" style="background:#58a6ff"></span>מגוון גנטי</span></div>
+    </div>
+    <div class="info-box">
+      🔬 <strong>מה קורה כאן?</strong><br>
+      אחרי סביבת "${G.env.name}", האוכלוסייה ה${popTrend}.
+      זה בדיוק מה שברירה טבעית עושה — משנה את הרכב האוכלוסייה לאורך הדורות.
+      <strong>זוהי אבולוציה.</strong>
+    </div>
+    <button class="btn btn-green" onclick="nextGen()">
+      ${G.gen < 5 ? '▶ דור ' + (G.gen+1) : '🏆 לסיום המשחק'}
+    </button>
+  `);
+  G.seen.add('naturalsel');
+  requestAnimationFrame(() => drawGraph('g-canvas', false));
+}
+
+// ─────────────────────────────────────────────────────────────
+// GRAPH DRAWING
+// ─────────────────────────────────────────────────────────────
+function drawGraph(id, isFinal) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return;
+  const parent = canvas.parentElement;
+  const W = parent ? parent.clientWidth - (isFinal ? 0 : 28) : 380;
+  const H = isFinal ? 180 : 150;
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  const pad = 32, maxV = 220;
+  const pw = W - pad * 2, ph = H - pad - 20;
+
+  ctx.fillStyle = '#0d1117';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = '#21262d'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad + ph - (i/4)*ph;
+    ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(pad+pw, y); ctx.stroke();
+    ctx.fillStyle = '#8b949e'; ctx.font = '9px Arial'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(maxV*i/4), pad-4, y+3);
+  }
+  // X labels
+  ctx.textAlign = 'center';
+  for (let i = 0; i <= 5; i++) {
+    ctx.fillStyle = '#8b949e'; ctx.font = '10px Arial';
+    ctx.fillText('ד'+i, pad+(i/5)*pw, pad+ph+14);
+  }
+  // Lines
+  line(ctx, G.pop,            maxV, pad, ph, pw, '#3fb950');
+  line(ctx, G.div.map(d=>d*2), maxV, pad, ph, pw, '#58a6ff');
+
+  if (isFinal) {
+    ctx.fillStyle='#3fb950'; ctx.fillRect(pad, pad+ph+22, 10, 10);
+    ctx.fillStyle='#c9d1d9'; ctx.font='10px Arial'; ctx.textAlign='left';
+    ctx.fillText('גודל אוכלוסייה', pad+14, pad+ph+31);
+    ctx.fillStyle='#58a6ff'; ctx.fillRect(pad+120, pad+ph+22, 10, 10);
+    ctx.fillText('מגוון גנטי', pad+134, pad+ph+31);
+  }
+}
+
+function line(ctx, data, maxV, pad, ph, pw, color) {
+  if (data.length < 2) return;
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  data.forEach((v,i) => {
+    const x = pad+(i/5)*pw, y = pad+ph - Math.min(1, v/maxV)*ph;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.fillStyle = color;
+  data.forEach((v,i) => {
+    const x = pad+(i/5)*pw, y = pad+ph - Math.min(1, v/maxV)*ph;
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+  });
+}
+
+// ─────────────────────────────────────────────────────────────
+// WIN
+// ─────────────────────────────────────────────────────────────
+function showWin() {
+  show('s-win');
+  const maxS = 200, pct = G.score / maxS;
+  const stars = pct > .72 ? 3 : pct > .42 ? 2 : 1;
+  document.getElementById('w-emoji').textContent  = G.creature.emoji;
+  document.getElementById('w-title').textContent  = 'ה' + G.creature.name + ' שרד 5 דורות!';
+  document.getElementById('w-sub').textContent    = 'ניקוד: ' + G.score + ' · ' + G.mutations.length + ' מוטציות נבחרו';
+  document.getElementById('w-stars').textContent  = '⭐'.repeat(stars) + '☆'.repeat(3-stars);
+
+  const seen = [...G.seen].filter(k => GLOSSARY[k]);
+  const list = document.getElementById('concepts-list');
+  list.innerHTML = seen.length
+    ? seen.map(k => {
+        const c = GLOSSARY[k];
+        return `<div class="ci"><div class="ci-ic">${c.e}</div><div><div class="ci-nm">${c.name}</div><div class="ci-df">${c.def}</div></div></div>`;
+      }).join('')
+    : '<div style="color:#8b949e;font-size:.84rem">שחק שוב כדי לגלות יותר מושגים!</div>';
+
+  setTimeout(() => drawGraph('final-graph', true), 120);
+  confetti();
+}
+
+// ─────────────────────────────────────────────────────────────
+// UTILS
+// ─────────────────────────────────────────────────────────────
+function show(id) { document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function setContent(html) { document.getElementById('game-content').innerHTML = html; }
+function rnd(n)   { return Math.floor(Math.random() * n); }
+function shuffle(a) { for (let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];} return a; }
+
+function confetti() {
+  if (!document.getElementById('fallStyle')) {
+    const s = document.createElement('style');
+    s.id = 'fallStyle';
+    s.textContent = '@keyframes fall{to{transform:translateY(110vh) rotate(360deg);opacity:0}}';
+    document.head.appendChild(s);
+  }
+  const colors = ['#f9c74f','#3fb950','#58a6ff','#f78166','#d2a8ff'];
+  for (let i = 0; i < 55; i++) {
+    setTimeout(() => {
+      const el = document.createElement('div');
+      el.style.cssText = `position:fixed;top:-10px;left:${Math.random()*100}%;width:8px;height:8px;border-radius:50%;background:${colors[rnd(colors.length)]};animation:fall ${1.4+Math.random()}s linear forwards;z-index:9999;pointer-events:none`;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }, i * 45);
+  }
+}
+</script>
+</body>
+</html>
